@@ -30,6 +30,7 @@ impl Drop for WakeLock {
 }
 
 #[cfg(target_os = "windows")]
+#[allow(unsafe_code)]
 mod platform {
     use super::*;
 
@@ -42,7 +43,7 @@ mod platform {
     // sem risco de corrupção de memória — recebe apenas um valor inteiro e retorna
     // o estado anterior. É chamada a partir de uma única thread de controle.
     #[link(name = "kernel32")]
-    extern "system" {
+    unsafe extern "system" {
         fn SetThreadExecutionState(esFlags: u32) -> u32;
     }
 

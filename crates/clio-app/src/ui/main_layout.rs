@@ -1,9 +1,9 @@
 //! Layout principal: barra de abas + conteúdo.
 
-use egui::{Context, Frame as EFrame};
+use super::{library, recording, settings, templates};
+use crate::app_state::{ActiveTab, AppState};
 use eframe::Frame;
-use crate::app_state::{AppState, ActiveTab};
-use super::{recording, library, templates, settings};
+use egui::Context;
 
 pub fn show(ctx: &Context, _frame: &mut Frame, state: &mut AppState) {
     // ── Barra de abas superior ─────────────────────────────────────────────
@@ -17,18 +17,16 @@ pub fn show(ctx: &Context, _frame: &mut Frame, state: &mut AppState) {
                 ui.label(egui::RichText::new("⚖ Clio").size(18.0).strong());
                 ui.separator();
 
-                for (tab, label, shortcut) in [
-                    (ActiveTab::Gravar,       "🎥  Gravar",        ""),
-                    (ActiveTab::Biblioteca,   "📂  Biblioteca",    ""),
-                    (ActiveTab::Modelos,      "📄  Modelos",       ""),
-                    (ActiveTab::Configuracoes,"⚙  Configurações", ""),
+                for (tab, label, _shortcut) in [
+                    (ActiveTab::Gravar, "🎥  Gravar", ""),
+                    (ActiveTab::Biblioteca, "📂  Biblioteca", ""),
+                    (ActiveTab::Modelos, "📄  Modelos", ""),
+                    (ActiveTab::Configuracoes, "⚙  Configurações", ""),
                 ] {
                     let selected = state.tab == tab;
-                    let btn = egui::Button::new(
-                        egui::RichText::new(label).size(14.0)
-                    )
-                    .selected(selected)
-                    .min_size(egui::vec2(110.0, 36.0));
+                    let btn = egui::Button::new(egui::RichText::new(label).size(14.0))
+                        .selected(selected)
+                        .min_size(egui::vec2(110.0, 36.0));
 
                     if ui.add(btn).clicked() {
                         state.tab = tab;
@@ -57,23 +55,18 @@ pub fn show(ctx: &Context, _frame: &mut Frame, state: &mut AppState) {
                 // Aviso de configuração corrompida/restaurada
                 if !state.config_warnings.is_empty() {
                     ui.add_space(8.0);
-                    ui.colored_label(
-                        egui::Color32::YELLOW,
-                        "⚠ Configuração restaurada",
-                    )
-                    .on_hover_text(state.config_warnings.join("\n"));
+                    ui.colored_label(egui::Color32::YELLOW, "⚠ Configuração restaurada")
+                        .on_hover_text(state.config_warnings.join("\n"));
                 }
             });
         });
 
     // ── Conteúdo da aba ────────────────────────────────────────────────────
-    egui::CentralPanel::default().show(ctx, |ui| {
-        match state.tab {
-            ActiveTab::Gravar        => recording::show_recording_tab(ui, state),
-            ActiveTab::Biblioteca    => library::show_library_tab(ui, state),
-            ActiveTab::Modelos       => templates::show_templates_tab(ui, state),
-            ActiveTab::Configuracoes => settings::show_settings_tab(ui, state),
-        }
+    egui::CentralPanel::default().show(ctx, |ui| match state.tab {
+        ActiveTab::Gravar => recording::show_recording_tab(ui, state),
+        ActiveTab::Biblioteca => library::show_library_tab(ui, state),
+        ActiveTab::Modelos => templates::show_templates_tab(ui, state),
+        ActiveTab::Configuracoes => settings::show_settings_tab(ui, state),
     });
 }
 

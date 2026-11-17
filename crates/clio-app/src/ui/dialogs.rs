@@ -1,11 +1,13 @@
 //! Diálogos modais: confirmação, recuperação, orientações legais.
 
-use egui::Context;
 use crate::app_state::{AppState, ConfirmAction};
+use egui::Context;
 use tracing::info;
 
 pub fn show_confirm_dialog(ctx: &Context, state: &mut AppState) {
-    let Some(dialog) = &state.confirm_dialog else { return };
+    let Some(dialog) = &state.confirm_dialog else {
+        return;
+    };
     let title = dialog.title.clone();
 
     egui::Window::new(&title)
@@ -29,22 +31,27 @@ pub fn show_confirm_dialog(ctx: &Context, state: &mut AppState) {
                 let can_confirm = state.confirm_dialog.as_ref().unwrap().can_confirm();
                 let action = state.confirm_dialog.as_ref().unwrap().action.clone();
 
-                if ui.add_enabled(
-                    can_confirm,
-                    egui::Button::new(
-                        egui::RichText::new("Confirmar")
-                            .color(egui::Color32::from_rgb(255, 100, 100))
-                    ).min_size(egui::vec2(120.0, 32.0))
-                ).clicked() {
+                if ui
+                    .add_enabled(
+                        can_confirm,
+                        egui::Button::new(
+                            egui::RichText::new("Confirmar")
+                                .color(egui::Color32::from_rgb(255, 100, 100)),
+                        )
+                        .min_size(egui::vec2(120.0, 32.0)),
+                    )
+                    .clicked()
+                {
                     state.confirm_dialog = None;
                     execute_confirm_action(state, action);
                 }
 
                 ui.add_space(8.0);
 
-                if ui.add(
-                    egui::Button::new("Cancelar").min_size(egui::vec2(100.0, 32.0))
-                ).clicked() {
+                if ui
+                    .add(egui::Button::new("Cancelar").min_size(egui::vec2(100.0, 32.0)))
+                    .clicked()
+                {
                     state.confirm_dialog = None;
                 }
             });
@@ -60,7 +67,9 @@ fn execute_confirm_action(state: &mut AppState, action: ConfirmAction) {
                 info!("Gravação finalizada pelo usuário");
             }
             state.active_recording = None;
-            state.push_toast(crate::app_state::Toast::success("Gravação finalizada e salva na biblioteca"));
+            state.push_toast(crate::app_state::Toast::success(
+                "Gravação finalizada e salva na biblioteca",
+            ));
         }
         ConfirmAction::DeleteRecording { id, path } => {
             let _ = std::fs::remove_file(&path);
@@ -131,7 +140,7 @@ pub fn show_recovery_dialog(ctx: &Context, state: &mut AppState) {
         .show(ctx, |ui| {
             ui.label(
                 "As sessões abaixo não tiveram encerramento regular (possível queda do sistema).\
-                 \nEscolha Resgatar para recuperar o vídeo ou Manter para análise posterior."
+                 \nEscolha Resgatar para recuperar o vídeo ou Manter para análise posterior.",
             );
             ui.add_space(8.0);
 
@@ -145,8 +154,12 @@ pub fn show_recovery_dialog(ctx: &Context, state: &mut AppState) {
                     ui.label(format!("Início: {}", sessao.inicio_iso8601));
                     ui.label(format!("Arquivo: {}", sessao.arquivo_path));
                     ui.horizontal(|ui| {
-                        if ui.button("🔧 Resgatar").clicked() { to_rescue = Some(i); }
-                        if ui.button("📁 Manter para análise").clicked() { to_keep = Some(i); }
+                        if ui.button("🔧 Resgatar").clicked() {
+                            to_rescue = Some(i);
+                        }
+                        if ui.button("📁 Manter para análise").clicked() {
+                            to_keep = Some(i);
+                        }
                     });
                 });
                 ui.add_space(4.0);
@@ -156,14 +169,12 @@ pub fn show_recovery_dialog(ctx: &Context, state: &mut AppState) {
                 let sessao = state.sessoes_pendentes.remove(i);
                 info!("Resgatando sessão: {}", sessao.id);
                 // Marcar como recuperada no banco
-                let journal = clio_store::SessionJournal {
-                    db: &state.db,
-                    sessao_id: sessao.id.clone(),
-                };
+                let journal = clio_store::SessionJournal::for_session(&state.db, &sessao.id);
                 let _ = journal.marcar_recuperada();
-                state.push_toast(crate::app_state::Toast::info(
-                    format!("Sessão de '{}' resgatada", sessao.depoente_nome)
-                ));
+                state.push_toast(crate::app_state::Toast::info(format!(
+                    "Sessão de '{}' resgatada",
+                    sessao.depoente_nome
+                )));
             }
             if let Some(i) = to_keep {
                 state.sessoes_pendentes.remove(i);

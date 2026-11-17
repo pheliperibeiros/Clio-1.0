@@ -1,12 +1,10 @@
 //! Estado global do aplicativo — compartilhado entre frames da UI.
 
-use parking_lot::Mutex;
-use std::sync::Arc;
 use clio_config::{AppConfig, ConfigStorage};
-use clio_core::models::{Depoente, Processo, Defesa, Participante};
+use clio_core::models::{Defesa, Depoente, Participante, Processo};
 use clio_core::recording::RecordingState;
 use clio_core::types::Timestamp;
-use clio_media::{PipelineHandle, DeviceMonitor, VuLevel};
+use clio_media::{DeviceMonitor, PipelineHandle, VuLevel};
 use clio_store::{Database, session_journal::SessaoPendente};
 
 /// Aba ativa na UI.
@@ -19,7 +17,9 @@ pub enum ActiveTab {
 }
 
 impl Default for ActiveTab {
-    fn default() -> Self { Self::Gravar }
+    fn default() -> Self {
+        Self::Gravar
+    }
 }
 
 /// Estado de uma gravação em andamento.
@@ -59,8 +59,7 @@ pub struct SessionDraft {
 
 impl SessionDraft {
     pub fn is_valid_to_start(&self) -> bool {
-        !self.depoente.nome.trim().is_empty()
-            && !self.processo.numero.trim().is_empty()
+        !self.depoente.nome.trim().is_empty() && !self.processo.numero.trim().is_empty()
     }
 
     pub fn blocking_issues(&self) -> Vec<String> {
@@ -176,26 +175,46 @@ pub enum ToastKind {
 
 impl Toast {
     pub fn info(msg: impl Into<String>) -> Self {
-        Self { message: msg.into(), kind: ToastKind::Info, created: std::time::Instant::now(), duration_secs: 4.0 }
+        Self {
+            message: msg.into(),
+            kind: ToastKind::Info,
+            created: std::time::Instant::now(),
+            duration_secs: 4.0,
+        }
     }
     pub fn success(msg: impl Into<String>) -> Self {
-        Self { message: msg.into(), kind: ToastKind::Success, created: std::time::Instant::now(), duration_secs: 4.0 }
+        Self {
+            message: msg.into(),
+            kind: ToastKind::Success,
+            created: std::time::Instant::now(),
+            duration_secs: 4.0,
+        }
     }
     pub fn warning(msg: impl Into<String>) -> Self {
-        Self { message: msg.into(), kind: ToastKind::Warning, created: std::time::Instant::now(), duration_secs: 6.0 }
+        Self {
+            message: msg.into(),
+            kind: ToastKind::Warning,
+            created: std::time::Instant::now(),
+            duration_secs: 6.0,
+        }
     }
     pub fn error(msg: impl Into<String>) -> Self {
-        Self { message: msg.into(), kind: ToastKind::Error, created: std::time::Instant::now(), duration_secs: 8.0 }
+        Self {
+            message: msg.into(),
+            kind: ToastKind::Error,
+            created: std::time::Instant::now(),
+            duration_secs: 8.0,
+        }
     }
     pub fn expired(&self) -> bool {
         self.created.elapsed().as_secs_f32() > self.duration_secs
     }
     pub fn color(&self) -> egui::Color32 {
         match self.kind {
-            ToastKind::Info    => egui::Color32::from_rgb(50, 120, 200),
+            ToastKind::Info => egui::Color32::from_rgb(50, 120, 200),
             ToastKind::Success => egui::Color32::from_rgb(40, 160, 80),
             ToastKind::Warning => egui::Color32::from_rgb(200, 150, 20),
-            ToastKind::Error   => egui::Color32::from_rgb(200, 50, 50),
+            ToastKind::Error => egui::Color32::from_rgb(200, 50, 50),
         }
     }
 }

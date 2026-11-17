@@ -1,10 +1,10 @@
 //! Aba de gravação — painel principal com vídeo, identificação e controles.
 
-use egui::Ui;
-use crate::app_state::{AppState, ActiveRecording, ConfirmDialog, ConfirmAction};
+use crate::app_state::{ActiveRecording, AppState, ConfirmAction, ConfirmDialog};
 use crate::ui::main_layout::format_secs;
 use clio_core::recording::RecordingState;
-use clio_media::{PipelineEvent, PipelineCommand, DeviceEvent};
+use clio_media::{DeviceEvent, PipelineCommand, PipelineEvent};
+use egui::Ui;
 use tracing::{info, warn};
 
 /// Processa eventos do pipeline (chamado a cada frame, antes do rendering).
@@ -17,7 +17,10 @@ pub fn process_pipeline_events(state: &mut AppState) {
 
     for event in events {
         match event {
-            PipelineEvent::DurationUpdate { secs_recorded, secs_paused } => {
+            PipelineEvent::DurationUpdate {
+                secs_recorded,
+                secs_paused,
+            } => {
                 if let Some(rec) = &mut state.active_recording {
                     rec.secs_recorded = secs_recorded;
                     rec.secs_paused = secs_paused;
@@ -25,16 +28,26 @@ pub fn process_pipeline_events(state: &mut AppState) {
             }
             PipelineEvent::VuUpdate { mic, level } => {
                 if let Some(rec) = &mut state.active_recording {
-                    if mic == 1 { rec.vu_mic1 = level; }
-                    else { rec.vu_mic2 = level; }
+                    if mic == 1 {
+                        rec.vu_mic1 = level;
+                    } else {
+                        rec.vu_mic2 = level;
+                    }
                 }
             }
-            PipelineEvent::PreviewFrame { width, height, data } => {
+            PipelineEvent::PreviewFrame {
+                width,
+                height,
+                data,
+            } => {
                 if let Some(rec) = &mut state.active_recording {
                     rec.preview_frame = Some((width, height, data));
                 }
             }
-            PipelineEvent::DiskSpaceUpdate { minutes_remaining, bytes_available } => {
+            PipelineEvent::DiskSpaceUpdate {
+                minutes_remaining,
+                bytes_available,
+            } => {
                 if let Some(rec) = &mut state.active_recording {
                     rec.disk_minutes_remaining = minutes_remaining;
                     rec.disk_bytes_available = bytes_available;
@@ -83,16 +96,18 @@ pub fn process_pipeline_events(state: &mut AppState) {
                 // Limpeza feita pela lógica de finalização
             }
             PipelineEvent::Error(e) => {
-                state.push_toast(crate::app_state::Toast::error(format!("Erro de gravação: {e}")));
+                state.push_toast(crate::app_state::Toast::error(format!(
+                    "Erro de gravação: {e}"
+                )));
                 if let Some(rec) = &mut state.active_recording {
                     rec.warnings.push(e);
                 }
             }
             PipelineEvent::Started { encoder_used, .. } => {
                 info!("Pipeline iniciado com encoder: {encoder_used}");
-                state.push_toast(crate::app_state::Toast::success(
-                    format!("Gravação iniciada — encoder: {encoder_used}")
-                ));
+                state.push_toast(crate::app_state::Toast::success(format!(
+                    "Gravação iniciada — encoder: {encoder_used}"
+                )));
             }
             PipelineEvent::HashBlock(_) => {
                 // Registrado no diário via clio-store (integração na fase c)
@@ -117,7 +132,8 @@ pub fn process_device_events(state: &mut AppState) {
 
 /// Renderiza a aba de gravação completa.
 pub fn show_recording_tab(ui: &mut Ui, state: &mut AppState) {
-    let is_recording = state.active_recording
+    let is_recording = state
+        .active_recording
         .as_ref()
         .map(|r| r.state.is_active())
         .unwrap_or(false);
@@ -157,13 +173,13 @@ fn video_preview(ui: &mut Ui, state: &mut AppState) {
             // Placeholder da prévia
             let preview_rect = egui::Rect::from_center_size(
                 ui.cursor().center() + egui::vec2(0.0, 80.0),
-                egui::vec2(avail.x.min(640.0), (avail.x.min(640.0) * 9.0 / 16.0).min(360.0)),
+                egui::vec2(
+                    avail.x.min(640.0),
+                    (avail.x.min(640.0) * 9.0 / 16.0).min(360.0),
+                ),
             );
-            ui.painter().rect_filled(
-                preview_rect,
-                4.0,
-                egui::Color32::from_rgb(20, 20, 30),
-            );
+            ui.painter()
+                .rect_filled(preview_rect, 4.0, egui::Color32::from_rgb(20, 20, 30));
             ui.painter().text(
                 preview_rect.center(),
                 egui::Align2::CENTER_CENTER,
@@ -179,15 +195,18 @@ fn video_preview(ui: &mut Ui, state: &mut AppState) {
         // Prévia durante gravação (placeholder — frame real via egui_extras na fase b)
         let preview_w = avail.x;
         let preview_h = (preview_w * 9.0 / 16.0).min(avail.y - 20.0);
-        let preview_rect = egui::Rect::from_min_size(
-            ui.cursor().min,
-            egui::vec2(preview_w, preview_h),
-        );
-        ui.painter().rect_filled(preview_rect, 0.0, egui::Color32::from_rgb(10, 10, 15));
+        let preview_rect =
+            egui::Rect::from_min_size(ui.cursor().min, egui::vec2(preview_w, preview_h));
+        ui.painter()
+            .rect_filled(preview_rect, 0.0, egui::Color32::from_rgb(10, 10, 15));
         ui.painter().text(
             preview_rect.center(),
             egui::Align2::CENTER_CENTER,
-            if rec.state == RecordingState::Paused { "⏸ PAUSADO" } else { "🔴 GRAVANDO" },
+            if rec.state == RecordingState::Paused {
+                "⏸ PAUSADO"
+            } else {
+                "🔴 GRAVANDO"
+            },
             egui::FontId::proportional(28.0),
             if rec.state == RecordingState::Paused {
                 egui::Color32::YELLOW
@@ -199,7 +218,10 @@ fn video_preview(ui: &mut Ui, state: &mut AppState) {
 
         // Avisos sobrepostos
         if !rec.warnings.is_empty() {
-            ui.colored_label(egui::Color32::YELLOW, format!("⚠ {}", rec.warnings.last().unwrap()));
+            ui.colored_label(
+                egui::Color32::YELLOW,
+                format!("⚠ {}", rec.warnings.last().unwrap()),
+            );
         }
     }
 }
@@ -213,24 +235,53 @@ fn show_prechecklist(ui: &mut Ui, state: &AppState) {
         let mics = state.device_monitor.microphones();
         let draft = &state.session_draft;
 
-        checklist_item(ui, !cameras.is_empty(),
-            "Câmera 1 com imagem", "Nenhuma câmera detectada", true);
-        checklist_item(ui, !mics.is_empty(),
-            "Microfone 1 com sinal", "Nenhum microfone detectado", true);
-        checklist_item(ui, !draft.depoente.nome.trim().is_empty(),
-            "Nome do depoente preenchido", "Preencha o nome do depoente", true);
-        checklist_item(ui, !draft.processo.numero.trim().is_empty(),
-            "Número dos autos preenchido", "Preencha o número dos autos", true);
+        checklist_item(
+            ui,
+            !cameras.is_empty(),
+            "Câmera 1 com imagem",
+            "Nenhuma câmera detectada",
+            true,
+        );
+        checklist_item(
+            ui,
+            !mics.is_empty(),
+            "Microfone 1 com sinal",
+            "Nenhum microfone detectado",
+            true,
+        );
+        checklist_item(
+            ui,
+            !draft.depoente.nome.trim().is_empty(),
+            "Nome do depoente preenchido",
+            "Preencha o nome do depoente",
+            true,
+        );
+        checklist_item(
+            ui,
+            !draft.processo.numero.trim().is_empty(),
+            "Número dos autos preenchido",
+            "Preencha o número dos autos",
+            true,
+        );
 
         // Verificação de espaço
         let disk_ok = clio_media::space_monitor::DiskSpace::read(
-            &state.config.gravacao.pasta_destino
+            &state
+                .config
+                .gravacao
+                .pasta_destino
                 .clone()
-                .unwrap_or_else(|| std::path::PathBuf::from("."))
+                .unwrap_or_else(|| std::path::PathBuf::from(".")),
         )
         .map(|d| d.suficiente_para_iniciar())
         .unwrap_or(true);
-        checklist_item(ui, disk_ok, "Espaço em disco suficiente", "Espaço insuficiente", true);
+        checklist_item(
+            ui,
+            disk_ok,
+            "Espaço em disco suficiente",
+            "Espaço insuficiente",
+            true,
+        );
     });
 }
 
@@ -280,9 +331,10 @@ fn identification_form(ui: &mut Ui, state: &mut AppState, locked: bool) {
         ui.label("Depoente:");
         let resp = ui.text_edit_singleline(&mut state.session_draft.depoente.nome);
         if resp.changed() && state.session_draft.depoente.nome.trim().is_empty() {
-            state.session_draft.validation_msgs.insert(
-                "depoente.nome".into(), "Campo obrigatório".into()
-            );
+            state
+                .session_draft
+                .validation_msgs
+                .insert("depoente.nome".into(), "Campo obrigatório".into());
         } else {
             state.session_draft.validation_msgs.remove("depoente.nome");
         }
@@ -310,12 +362,14 @@ fn identification_form(ui: &mut Ui, state: &mut AppState, locked: bool) {
             });
 
         ui.label("Documento (CPF/RG, opcional):");
-        let mut doc = state.session_draft.depoente.documento
+        let mut doc = state
+            .session_draft
+            .depoente
+            .documento
             .clone()
             .unwrap_or_default();
         if ui.text_edit_singleline(&mut doc).changed() {
-            state.session_draft.depoente.documento =
-                if doc.is_empty() { None } else { Some(doc) };
+            state.session_draft.depoente.documento = if doc.is_empty() { None } else { Some(doc) };
         }
 
         ui.separator();
@@ -327,11 +381,15 @@ fn identification_form(ui: &mut Ui, state: &mut AppState, locked: bool) {
         ui.label("Nº dos Autos:");
         let resp = ui.text_edit_singleline(&mut state.session_draft.processo.numero);
         if resp.changed() && state.session_draft.processo.numero.trim().is_empty() {
-            state.session_draft.validation_msgs.insert(
-                "processo.numero".into(), "Campo obrigatório".into()
-            );
+            state
+                .session_draft
+                .validation_msgs
+                .insert("processo.numero".into(), "Campo obrigatório".into());
         } else {
-            state.session_draft.validation_msgs.remove("processo.numero");
+            state
+                .session_draft
+                .validation_msgs
+                .remove("processo.numero");
         }
         if let Some(msg) = state.session_draft.validation_msgs.get("processo.numero") {
             ui.colored_label(egui::Color32::RED, msg);
@@ -377,7 +435,7 @@ fn participants_form(ui: &mut Ui, state: &mut AppState, locked: bool) {
                     if resp.changed() {
                         // Validar OAB sem bloquear
                         if !oab.is_empty() {
-                            if let Err(e) = clio_core::validation::validar_oab(&oab) {
+                            if let Err(_e) = clio_core::validation::validar_oab(&oab) {
                                 ui.colored_label(egui::Color32::YELLOW, "⚠ Formato OAB inválido");
                             }
                         }
@@ -396,7 +454,10 @@ fn participants_form(ui: &mut Ui, state: &mut AppState, locked: bool) {
         }
 
         if ui.button("+ Adicionar Defesa").clicked() {
-            state.session_draft.defesas.push(clio_core::models::Defesa::new(String::new()));
+            state
+                .session_draft
+                .defesas
+                .push(clio_core::models::Defesa::new(String::new()));
         }
     });
 }
@@ -432,14 +493,27 @@ fn devices_form(ui: &mut Ui, state: &mut AppState) {
             let bar_w = 160.0;
             let bar_h = 10.0;
             let (rect, _) = ui.allocate_exact_size(egui::vec2(bar_w, bar_h), egui::Sense::hover());
-            let fill = if level.clipping { egui::Color32::RED }
-                else if level.rms_normalized() > 0.8 { egui::Color32::YELLOW }
-                else { egui::Color32::GREEN };
+            let fill = if level.clipping {
+                egui::Color32::RED
+            } else if level.rms_normalized() > 0.8 {
+                egui::Color32::YELLOW
+            } else {
+                egui::Color32::GREEN
+            };
             ui.painter().rect_filled(
-                egui::Rect::from_min_size(rect.min, egui::vec2(bar_w * level.rms_normalized(), bar_h)),
-                0.0, fill,
+                egui::Rect::from_min_size(
+                    rect.min,
+                    egui::vec2(bar_w * level.rms_normalized(), bar_h),
+                ),
+                0.0,
+                fill,
             );
-            ui.painter().rect_stroke(rect, 0.0, egui::Stroke::new(1.0, egui::Color32::GRAY), egui::StrokeKind::default());
+            ui.painter().rect_stroke(
+                rect,
+                0.0,
+                egui::Stroke::new(1.0_f32, egui::Color32::GRAY),
+                egui::StrokeKind::Inside,
+            );
         }
     }
 }
@@ -471,7 +545,12 @@ fn tarja_form(ui: &mut Ui, state: &mut AppState) {
 
     // Predefinições
     ui.horizontal(|ui| {
-        for (label, val) in [("Opaco", 0u8), ("Padrão", 6), ("Translúcido", 50), ("Sem fundo", 100)] {
+        for (label, val) in [
+            ("Opaco", 0u8),
+            ("Padrão", 6),
+            ("Translúcido", 50),
+            ("Sem fundo", 100),
+        ] {
             if ui.small_button(label).clicked() {
                 tarja.transparencia_fundo_pct = val;
                 state.config_dirty = true;
@@ -483,11 +562,23 @@ fn tarja_form(ui: &mut Ui, state: &mut AppState) {
     ui.separator();
     ui.horizontal(|ui| {
         ui.label("Posição:");
-        if ui.selectable_label(tarja.posicao == clio_config::schema::PosicaoTarja::Inferior, "Inferior").clicked() {
+        if ui
+            .selectable_label(
+                tarja.posicao == clio_config::schema::PosicaoTarja::Inferior,
+                "Inferior",
+            )
+            .clicked()
+        {
             tarja.posicao = clio_config::schema::PosicaoTarja::Inferior;
             state.config_dirty = true;
         }
-        if ui.selectable_label(tarja.posicao == clio_config::schema::PosicaoTarja::Superior, "Superior").clicked() {
+        if ui
+            .selectable_label(
+                tarja.posicao == clio_config::schema::PosicaoTarja::Superior,
+                "Superior",
+            )
+            .clicked()
+        {
             tarja.posicao = clio_config::schema::PosicaoTarja::Superior;
             state.config_dirty = true;
         }
@@ -500,7 +591,10 @@ fn tarja_form(ui: &mut Ui, state: &mut AppState) {
             clio_config::schema::AlturaTarja::Normal,
             clio_config::schema::AlturaTarja::Ampla,
         ] {
-            if ui.selectable_label(tarja.altura == altura, altura.label()).clicked() {
+            if ui
+                .selectable_label(tarja.altura == altura, altura.label())
+                .clicked()
+            {
                 tarja.altura = altura;
                 state.config_dirty = true;
             }
@@ -524,7 +618,7 @@ fn control_strip(ui: &mut Ui, state: &mut AppState, is_recording: bool) {
             let btn = egui::Button::new(
                 egui::RichText::new("▶ Iniciar Gravação  (Ctrl+Enter)")
                     .size(16.0)
-                    .strong()
+                    .strong(),
             )
             .min_size(egui::vec2(240.0, 52.0));
 
@@ -536,7 +630,11 @@ fn control_strip(ui: &mut Ui, state: &mut AppState, is_recording: bool) {
                 resp.on_hover_text(blocking.join("\n"));
             }
         } else {
-            let rec_state = state.active_recording.as_ref().map(|r| r.state).unwrap_or(RecordingState::Idle);
+            let rec_state = state
+                .active_recording
+                .as_ref()
+                .map(|r| r.state)
+                .unwrap_or(RecordingState::Idle);
 
             // Botão Pausar / Retomar
             let (pause_label, pause_action) = if rec_state == RecordingState::Paused {
@@ -545,10 +643,13 @@ fn control_strip(ui: &mut Ui, state: &mut AppState, is_recording: bool) {
                 ("⏸ Pausar (Recesso)  (Espaço)", false)
             };
 
-            if ui.add(
-                egui::Button::new(egui::RichText::new(pause_label).size(14.0))
-                    .min_size(egui::vec2(200.0, 52.0))
-            ).clicked() {
+            if ui
+                .add(
+                    egui::Button::new(egui::RichText::new(pause_label).size(14.0))
+                        .min_size(egui::vec2(200.0, 52.0)),
+                )
+                .clicked()
+            {
                 toggle_pause(state, pause_action);
             }
 
@@ -558,7 +659,7 @@ fn control_strip(ui: &mut Ui, state: &mut AppState, is_recording: bool) {
             let finalizar_btn = egui::Button::new(
                 egui::RichText::new("⏹ Finalizar  (Ctrl+Shift+F)")
                     .size(14.0)
-                    .color(egui::Color32::from_rgb(255, 100, 100))
+                    .color(egui::Color32::from_rgb(255, 100, 100)),
             )
             .min_size(egui::vec2(200.0, 52.0))
             .fill(egui::Color32::from_rgb(80, 20, 20));
@@ -568,7 +669,13 @@ fn control_strip(ui: &mut Ui, state: &mut AppState, is_recording: bool) {
                     title: "Finalizar gravação".to_string(),
                     message: format!(
                         "Deseja finalizar a gravação?\nDuração: {}",
-                        format_secs(state.active_recording.as_ref().map(|r| r.secs_recorded).unwrap_or(0))
+                        format_secs(
+                            state
+                                .active_recording
+                                .as_ref()
+                                .map(|r| r.secs_recorded)
+                                .unwrap_or(0)
+                        )
                     ),
                     require_text: None,
                     typed_text: String::new(),
@@ -579,7 +686,11 @@ fn control_strip(ui: &mut Ui, state: &mut AppState, is_recording: bool) {
             // Cronômetro grande
             ui.add_space(24.0);
             let cronometro = format_secs(
-                state.active_recording.as_ref().map(|r| r.secs_recorded).unwrap_or(0)
+                state
+                    .active_recording
+                    .as_ref()
+                    .map(|r| r.secs_recorded)
+                    .unwrap_or(0),
             );
             ui.label(
                 egui::RichText::new(&cronometro)
@@ -601,7 +712,8 @@ fn control_strip(ui: &mut Ui, state: &mut AppState, is_recording: bool) {
                     start_recording(state);
                 }
             }
-            if i.modifiers.ctrl && i.modifiers.shift && i.key_pressed(egui::Key::F) && is_recording {
+            if i.modifiers.ctrl && i.modifiers.shift && i.key_pressed(egui::Key::F) && is_recording
+            {
                 if state.confirm_dialog.is_none() {
                     state.confirm_dialog = Some(ConfirmDialog {
                         title: "Finalizar gravação".to_string(),
@@ -613,7 +725,8 @@ fn control_strip(ui: &mut Ui, state: &mut AppState, is_recording: bool) {
                 }
             }
             if i.key_pressed(egui::Key::Space) && is_recording {
-                let paused = state.active_recording
+                let paused = state
+                    .active_recording
                     .as_ref()
                     .map(|r| r.state == RecordingState::Paused)
                     .unwrap_or(false);
@@ -627,7 +740,10 @@ fn start_recording(state: &mut AppState) {
     info!("Iniciando gravação...");
     let handle = clio_media::pipeline::spawn_pipeline();
 
-    let output_dir = state.config.gravacao.pasta_destino
+    let output_dir = state
+        .config
+        .gravacao
+        .pasta_destino
         .clone()
         .unwrap_or_else(|| {
             directories::UserDirs::new()
@@ -636,22 +752,24 @@ fn start_recording(state: &mut AppState) {
                 .join("Clio")
         });
 
-    let inicio = time::OffsetDateTime::now_local()
-        .unwrap_or_else(|_| time::OffsetDateTime::now_utc());
+    let inicio =
+        time::OffsetDateTime::now_local().unwrap_or_else(|_| time::OffsetDateTime::now_utc());
 
     let filename = clio_core::filename::gerar_nome_arquivo(
         &state.session_draft.depoente.nome,
         &state.session_draft.processo.numero,
         &inicio,
         "mkv",
-    ).unwrap_or_else(|_| "oitiva.mkv".to_string());
+    )
+    .unwrap_or_else(|_| "oitiva.mkv".to_string());
 
     let session_dir = output_dir.join(
         clio_core::filename::gerar_nome_pasta(
             &state.session_draft.depoente.nome,
             &state.session_draft.processo.numero,
             &inicio,
-        ).unwrap_or_else(|_| "oitiva".to_string())
+        )
+        .unwrap_or_else(|_| "oitiva".to_string()),
     );
     let output_path = session_dir.join(&filename);
 

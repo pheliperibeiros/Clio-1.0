@@ -4,10 +4,9 @@
 //! Fonte embutida: usa fonte padrão do printpdf (Helvetica como fallback).
 //! Nota: fontes com acentuação correta requerem embutir Noto Sans (OFL-1.1).
 
-use printpdf::*;
-use image::DynamicImage;
-use std::io::BufWriter;
 use crate::error::{ReportError, ReportResult};
+use printpdf::*;
+use std::io::BufWriter;
 
 /// Margens em mm para A4.
 const MARGEM_MM: f32 = 15.0;
@@ -18,9 +17,9 @@ const A4_HEIGHT_MM: f32 = 297.0;
 /// Largura da página A4 em mm.
 const A4_WIDTH_MM: f32 = 210.0;
 /// Tamanho do texto do corpo em pontos.
-const FONT_SIZE_BODY: f64 = 11.0;
+const FONT_SIZE_BODY: f32 = 11.0;
 /// Tamanho do título em pontos.
-const FONT_SIZE_TITLE: f64 = 13.0;
+const FONT_SIZE_TITLE: f32 = 13.0;
 /// Altura máxima do cabeçalho em mm (~30mm para manter proporção de 1651×280).
 const HEADER_MAX_HEIGHT_MM: f32 = 30.0;
 
@@ -42,25 +41,22 @@ pub struct PdfParams<'a> {
 
 /// Gera o PDF e retorna os bytes.
 pub fn gerar_pdf(params: &PdfParams<'_>) -> ReportResult<Vec<u8>> {
-    let (doc, page1, layer1) = PdfDocument::new(
-        params.titulo,
-        Mm(A4_WIDTH_MM),
-        Mm(A4_HEIGHT_MM),
-        "Camada 1",
-    );
+    let (doc, page1, layer1) =
+        PdfDocument::new(params.titulo, Mm(A4_WIDTH_MM), Mm(A4_HEIGHT_MM), "Camada 1");
 
     // Adicionar fonte embutida (times-roman como baseline; em produção, embutir Noto Sans)
     // printpdf suporta fontes TTF/OTF. Usando built-in por ora.
-    let font = doc.add_builtin_font(BuiltinFont::TimesRoman)
+    let font = doc
+        .add_builtin_font(BuiltinFont::TimesRoman)
         .map_err(|e| ReportError::Pdf(e.to_string()))?;
-    let font_bold = doc.add_builtin_font(BuiltinFont::TimesBold)
+    let font_bold = doc
+        .add_builtin_font(BuiltinFont::TimesBold)
         .map_err(|e| ReportError::Pdf(e.to_string()))?;
 
     // Processar cabeçalho
-    let cabecalho_bytes = params.cabecalho_bytes
-        .unwrap_or(DEFAULT_HEADER_BYTES);
+    let cabecalho_bytes = params.cabecalho_bytes.unwrap_or(DEFAULT_HEADER_BYTES);
 
-    let cabecalho_img = image::load_from_memory(cabecalho_bytes)
+    let cabecalho_img = ::image::load_from_memory(cabecalho_bytes)
         .map_err(|e| ReportError::InvalidHeader(e.to_string()))?;
 
     // Calcular dimensões do cabeçalho preservando proporção
@@ -71,7 +67,7 @@ pub fn gerar_pdf(params: &PdfParams<'_>) -> ReportResult<Vec<u8>> {
 
     // Renderizar primeira página
     let current_layer = doc.get_page(page1).get_layer(layer1);
-    let y_apos_cabecalho = renderizar_pagina(
+    let _y_apos_cabecalho = renderizar_pagina(
         &doc,
         &current_layer,
         &font,
@@ -96,11 +92,11 @@ pub fn gerar_pdf(params: &PdfParams<'_>) -> ReportResult<Vec<u8>> {
 
 #[allow(clippy::too_many_arguments)]
 fn renderizar_pagina(
-    doc: &PdfDocumentReference,
+    _doc: &PdfDocumentReference,
     layer: &PdfLayerReference,
     font: &IndirectFontRef,
     font_bold: &IndirectFontRef,
-    cabecalho_img: &DynamicImage,
+    cabecalho_img: &::image::DynamicImage,
     cabecalho_largura_mm: f32,
     cabecalho_altura_mm: f32,
     titulo: &str,
@@ -112,11 +108,21 @@ fn renderizar_pagina(
     let mut y_mm = A4_HEIGHT_MM - MARGEM_MM;
 
     // ── Cabeçalho ────────────────────────────────────────────────────────────
-    // Converter imagem para formato suportado pelo printpdf
-    let rgba_img = cabecalho_img.to_rgba8();
-    let (img_w, img_h) = rgba_img.dimensions();
+    let rgb_img = cabecalho_img.to_rgb8();
+    let (img_w, img_h) = rgb_img.dimensions();
 
-    let image = Image::from_dynamic_image(cabecalho_img);
+    let image_xobject = ImageXObject {
+        width: Px(img_w as usize),
+        height: Px(img_h as usize),
+        color_space: ColorSpace::Rgb,
+        bits_per_component: ColorBits::Bit8,
+        interpolate: true,
+        image_data: rgb_img.into_raw(),
+        image_filter: None,
+        smask: None,
+        clipping_bbox: None,
+    };
+    let image = Image::from(image_xobject);
     let transform = ImageTransform {
         translate_x: Some(Mm(MARGEM_MM)),
         translate_y: Some(Mm(y_mm - cabecalho_altura_mm)),

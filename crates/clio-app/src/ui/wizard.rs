@@ -1,7 +1,7 @@
 //! Assistente de primeira execução.
 
-use egui::Context;
 use crate::app_state::AppState;
+use egui::Context;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 enum WizardStep {
@@ -40,7 +40,10 @@ pub fn show_first_run_wizard(ctx: &Context, state: &mut AppState) {
             ui.separator();
             // ── Passo 2: Pasta de gravações ────────────────────────────────
             ui.label(egui::RichText::new("2. Pasta de gravações").strong());
-            let pasta_str = state.config.gravacao.pasta_destino
+            let pasta_str = state
+                .config
+                .gravacao
+                .pasta_destino
                 .as_ref()
                 .map(|p| p.display().to_string())
                 .unwrap_or_else(|| "Padrão (Vídeos/Clio)".to_string());
@@ -48,7 +51,7 @@ pub fn show_first_run_wizard(ctx: &Context, state: &mut AppState) {
             if ui.button("Selecionar pasta…").clicked() {
                 // Integração com rfd (dialog de seleção de pasta) na fase final
                 state.push_toast(crate::app_state::Toast::info(
-                    "Seleção de pasta será integrada na fase (g)"
+                    "Seleção de pasta será integrada na fase (g)",
                 ));
             }
 
@@ -60,15 +63,21 @@ pub fn show_first_run_wizard(ctx: &Context, state: &mut AppState) {
             ui.label(format!("Câmeras detectadas: {}", cameras.len()));
             ui.label(format!("Microfones detectados: {}", mics.len()));
             if cameras.is_empty() {
-                ui.colored_label(egui::Color32::YELLOW, "⚠ Nenhuma câmera detectada. Conecte uma câmera e reinicie.");
+                ui.colored_label(
+                    egui::Color32::YELLOW,
+                    "⚠ Nenhuma câmera detectada. Conecte uma câmera e reinicie.",
+                );
             }
 
             ui.separator();
             ui.horizontal(|ui| {
-                if ui.add(
-                    egui::Button::new(egui::RichText::new("Concluir configuração").strong())
-                        .min_size(egui::vec2(200.0, 36.0))
-                ).clicked() {
+                if ui
+                    .add(
+                        egui::Button::new(egui::RichText::new("Concluir configuração").strong())
+                            .min_size(egui::vec2(200.0, 36.0)),
+                    )
+                    .clicked()
+                {
                     state.config.preferencias.primeiro_uso_concluido = true;
                     state.config_dirty = true;
                     state.save_config_if_dirty();

@@ -2,12 +2,13 @@
 //!
 //! Reage a eventos de conexão/desconexão em tempo real sem interromper gravações em andamento.
 
+use crate::error::MediaResult;
+use crossbeam_channel::{Receiver, Sender, unbounded};
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use parking_lot::RwLock;
-use crossbeam_channel::{Sender, Receiver, unbounded};
+#[allow(unused_imports)]
 use tracing::{info, warn};
-use crate::error::MediaResult;
 
 /// Tipo de dispositivo de mídia.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -140,7 +141,9 @@ impl DeviceMonitor {
         let microphones = Arc::clone(&self.microphones);
         let tx = self.event_tx.clone();
 
-        monitor.start().map_err(|e| crate::error::MediaError::GstInit(e.to_string()))?;
+        monitor
+            .start()
+            .map_err(|e| crate::error::MediaError::GstInit(e.to_string()))?;
         let bus = monitor.bus();
 
         std::thread::Builder::new()
@@ -154,7 +157,9 @@ impl DeviceMonitor {
                                     info!(device = %info.display_name, "Dispositivo conectado");
                                     match info.kind {
                                         DeviceKind::Camera => cameras.write().push(info.clone()),
-                                        DeviceKind::Microphone => microphones.write().push(info.clone()),
+                                        DeviceKind::Microphone => {
+                                            microphones.write().push(info.clone())
+                                        }
                                     }
                                     let _ = tx.send(DeviceEvent::Added(info));
                                 }
@@ -199,7 +204,7 @@ fn gst_device_to_info(dev: &gstreamer::Device) -> Option<DeviceInfo> {
     // Obter o nome do elemento fonte
     let caps = dev.caps()?;
     let element_name = match kind {
-        DeviceKind::Camera => "ksvideosrc",    // Windows
+        DeviceKind::Camera => "ksvideosrc",     // Windows
         DeviceKind::Microphone => "wasapi2src", // Windows
     };
 

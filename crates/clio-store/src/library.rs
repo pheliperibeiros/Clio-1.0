@@ -1,10 +1,10 @@
 //! Biblioteca de gravações concluídas.
 
+use crate::db::Database;
+use crate::error::StoreResult;
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, warn};
-use crate::db::Database;
-use crate::error::StoreResult;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum StatusGravacao {
@@ -148,7 +148,8 @@ impl Database {
 
     /// Remove uma gravação do banco (não apaga o arquivo — isso é feito pela UI).
     pub fn remover_gravacao(&self, id: &str) -> StoreResult<()> {
-        self.conn.execute("DELETE FROM gravacoes WHERE id = ?1", params![id])?;
+        self.conn
+            .execute("DELETE FROM gravacoes WHERE id = ?1", params![id])?;
         Ok(())
     }
 

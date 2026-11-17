@@ -11,8 +11,8 @@
 //! - Acima de 40% de transparência → texto ganha sombra automática
 //! - Acima de 60% → aviso na UI (a renderização continua normalmente)
 
-use tiny_skia::{Pixmap, Paint, Rect, PathBuilder, Transform, Color, FillRule};
 use crate::error::{MediaError, MediaResult};
+use tiny_skia::{Color, FillRule, Paint, PathBuilder, Pixmap, Rect, Transform};
 
 /// Parâmetros de configuração da tarja.
 #[derive(Debug, Clone)]
@@ -101,7 +101,13 @@ impl OverlayRenderer {
         .ok_or_else(|| MediaError::OverlayError("Retângulo inválido".to_string()))?;
 
         let path = PathBuilder::from_rect(rect);
-        pixmap.fill_path(&path, &paint, FillRule::Winding, Transform::identity(), None);
+        pixmap.fill_path(
+            &path,
+            &paint,
+            FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
 
         // ── Texto ─────────────────────────────────────────────────────────────
         // Nota: tiny-skia não renderiza texto diretamente.
@@ -136,7 +142,13 @@ impl OverlayRenderer {
             );
             if let Some(r) = rect {
                 let path = PathBuilder::from_rect(r);
-                pixmap.fill_path(&path, &paint, FillRule::Winding, Transform::identity(), None);
+                pixmap.fill_path(
+                    &path,
+                    &paint,
+                    FillRule::Winding,
+                    Transform::identity(),
+                    None,
+                );
             }
         }
         Ok(())

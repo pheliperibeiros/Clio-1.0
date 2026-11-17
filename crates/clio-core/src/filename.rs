@@ -10,9 +10,8 @@ use regex::Regex;
 
 /// Nomes reservados no Windows (case-insensitive, com ou sem extensão).
 const WINDOWS_RESERVED: &[&str] = &[
-    "CON", "PRN", "AUX", "NUL",
-    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+    "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
 ];
 
 /// Comprimento máximo do componente de arquivo (sem a extensão).
@@ -24,13 +23,10 @@ static RE_INVALID_CHARS: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"[\\/:*?"<>|\x00-\x1f]"#).unwrap()
 });
 
-static RE_LEADING_TRAILING_DOTS_SPACES: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^[\s.]+|[\s.]+$").unwrap()
-});
+static RE_LEADING_TRAILING_DOTS_SPACES: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[\s.]+|[\s.]+$").unwrap());
 
-static RE_MULTIPLE_UNDERSCORES: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"_+").unwrap()
-});
+static RE_MULTIPLE_UNDERSCORES: Lazy<Regex> = Lazy::new(|| Regex::new(r"_+").unwrap());
 
 /// Remove acentuação e substitui por ASCII equivalente (simples, sem dependência externa).
 fn deaccent(s: &str) -> String {
@@ -63,7 +59,9 @@ pub fn sanitize_component(s: &str) -> String {
     let s = RE_INVALID_CHARS.replace_all(&s, "").to_string();
     // Remover sequências de path traversal
     let s = s.replace("..", "");
-    let s = RE_LEADING_TRAILING_DOTS_SPACES.replace_all(&s, "").to_string();
+    let s = RE_LEADING_TRAILING_DOTS_SPACES
+        .replace_all(&s, "")
+        .to_string();
     let s = RE_MULTIPLE_UNDERSCORES.replace_all(&s, "_").to_string();
     s
 }
@@ -168,7 +166,8 @@ mod tests {
 
     #[test]
     fn nome_basico() {
-        let nome = gerar_nome_arquivo("João Silva", "0001234-56.2026.8.27.2729", &ts(), "mkv").unwrap();
+        let nome =
+            gerar_nome_arquivo("João Silva", "0001234-56.2026.8.27.2729", &ts(), "mkv").unwrap();
         // Deve conter as partes essenciais
         assert!(nome.starts_with("Oitiva_Joao_Silva_"));
         assert!(nome.ends_with(".mkv"));

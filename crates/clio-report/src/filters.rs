@@ -2,7 +2,7 @@
 //!
 //! Registrados no `minijinja::Environment` pelo `TemplateEngine`.
 
-use minijinja::{Value, Error as JinjaError, ErrorKind};
+use minijinja::{Error as JinjaError, ErrorKind, Value};
 
 /// `data_longa`: "17 de novembro de 2026"
 pub fn filtro_data_longa(val: Value, _args: &[Value]) -> Result<Value, JinjaError> {
@@ -46,13 +46,16 @@ pub fn filtro_minusculas(val: Value, _args: &[Value]) -> Result<Value, JinjaErro
 
 /// `duracao`: converte segundos (u64) em "1h 23min 05s" ou "23min 05s"
 pub fn filtro_duracao(val: Value, _args: &[Value]) -> Result<Value, JinjaError> {
-    let secs = match val.as_i64().or_else(|| val.as_str().and_then(|s| s.parse().ok())) {
+    let secs = match val
+        .as_i64()
+        .or_else(|| val.as_str().and_then(|s| s.parse().ok()))
+    {
         Some(v) if v >= 0 => v as u64,
         _ => {
             return Err(JinjaError::new(
                 ErrorKind::InvalidOperation,
                 "filtro 'duracao' requer um número inteiro de segundos",
-            ))
+            ));
         }
     };
     let h = secs / 3600;
@@ -68,13 +71,16 @@ pub fn filtro_duracao(val: Value, _args: &[Value]) -> Result<Value, JinjaError> 
 
 /// `bytes`: converte bytes (u64) em "1,4 GB", "512,0 MB", etc.
 pub fn filtro_bytes(val: Value, _args: &[Value]) -> Result<Value, JinjaError> {
-    let bytes = match val.as_i64().or_else(|| val.as_str().and_then(|s| s.parse().ok())) {
+    let bytes = match val
+        .as_i64()
+        .or_else(|| val.as_str().and_then(|s| s.parse().ok()))
+    {
         Some(v) if v >= 0 => v as u64,
         _ => {
             return Err(JinjaError::new(
                 ErrorKind::InvalidOperation,
                 "filtro 'bytes' requer um número inteiro de bytes",
-            ))
+            ));
         }
     };
     let resultado = formatar_bytes(bytes);
@@ -128,7 +134,11 @@ fn parse_iso_time(s: &str) -> Option<(u8, u8, u8)> {
     }
     let h: u8 = parts[0].parse().ok()?;
     let m: u8 = parts[1].parse().ok()?;
-    let sec: u8 = parts.get(2).and_then(|s| s.get(..2)).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let sec: u8 = parts
+        .get(2)
+        .and_then(|s| s.get(..2))
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
     Some((h, m, sec))
 }
 
@@ -213,14 +223,14 @@ mod tests {
     }
 
     #[test]
-    fn filtro_agrupar8() {
+    fn test_filtro_agrupar8() {
         let v = Value::from("a1b2c3d4e5f60718");
         let result = filtro_agrupar8(v, &[]).unwrap();
         assert_eq!(result.as_str().unwrap(), "a1b2c3d4 e5f60718");
     }
 
     #[test]
-    fn filtro_agrupar8_impar() {
+    fn test_filtro_agrupar8_impar() {
         let v = Value::from("abcdefghi"); // 9 chars → "abcdefgh i"
         let result = filtro_agrupar8(v, &[]).unwrap();
         assert_eq!(result.as_str().unwrap(), "abcdefgh i");

@@ -1,7 +1,7 @@
 //! Modelos de domínio: participantes, depoentes, sessões.
 
+use crate::types::{DurationSecs, ParticipantId, PipelineParams, SessionId, Timestamp};
 use serde::{Deserialize, Serialize};
-use crate::types::{ParticipantId, SessionId, Timestamp, DurationSecs, PipelineParams};
 
 // ─── Depoente ────────────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ pub struct Depoente {
 
 // ─── Processo ────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TipoProcesso {
     #[default]
     Autos,
@@ -114,7 +114,9 @@ impl Presenca {
 }
 
 impl Default for Presenca {
-    fn default() -> Self { Self::Presencial }
+    fn default() -> Self {
+        Self::Presencial
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -158,7 +160,9 @@ impl TipoDefesa {
 }
 
 impl Default for TipoDefesa {
-    fn default() -> Self { Self::AdvogadoConstituido }
+    fn default() -> Self {
+        Self::AdvogadoConstituido
+    }
 }
 
 /// Defensor presente na sessão.

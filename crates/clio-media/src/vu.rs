@@ -89,8 +89,7 @@ impl VuAccumulator {
             self.last_signal = now;
         }
 
-        self.level.silence_alert =
-            now.duration_since(self.last_signal) >= self.silence_duration;
+        self.level.silence_alert = now.duration_since(self.last_signal) >= self.silence_duration;
     }
 
     /// Reseta o acumulador (ex.: ao mutar o microfone).

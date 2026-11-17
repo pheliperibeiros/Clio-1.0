@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::{fmt, EnvFilter, prelude::*};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 pub fn init_logging() -> Result<WorkerGuard> {
     let log_dir = clio_config::storage::data_dir().join("logs");
@@ -13,8 +13,8 @@ pub fn init_logging() -> Result<WorkerGuard> {
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
     // Nível padrão: info (sem dados pessoais em info)
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("clio=info,warn"));
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("clio=info,warn"));
 
     tracing_subscriber::registry()
         .with(filter)

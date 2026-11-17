@@ -23,8 +23,8 @@ static RE_OAB: Lazy<Regex> = Lazy::new(|| {
 
 /// Siglas de estados brasileiros válidos.
 const ESTADOS_VALIDOS: &[&str] = &[
-    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
-    "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR",
+    "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
 ];
 
 /// Valida o formato de um número de OAB.

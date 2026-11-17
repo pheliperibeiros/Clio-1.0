@@ -2,8 +2,7 @@
 //!
 //! Modo WAL + synchronous=FULL para durabilidade máxima.
 #![forbid(unsafe_code)]
-#![warn(clippy::all, clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
+#![warn(clippy::all)]
 
 pub mod db;
 pub mod error;

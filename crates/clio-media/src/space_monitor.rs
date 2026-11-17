@@ -1,6 +1,7 @@
 //! Monitoramento de espaço em disco durante a gravação.
 
 use std::path::Path;
+#[allow(unused_imports)]
 use tracing::warn;
 
 /// Informações de espaço em disco.
@@ -44,7 +45,7 @@ mod platform {
     // O crate clio-media tem #![forbid(unsafe_code)] mas este módulo interno
     // usa unsafe para a chamada de sistema necessária.
     // Alternativa sem unsafe: crate `fs2` ou `sysinfo`.
-    pub fn disk_space(path: &Path) -> Option<DiskSpace> {
+    pub fn disk_space(_path: &Path) -> Option<DiskSpace> {
         // Usando std::fs::metadata não dá espaço em disco.
         // Usando sysinfo seria a abordagem limpa sem unsafe.
         // Por ora, retornamos uma estimativa conservadora para compilar sem dependência extra.
@@ -61,7 +62,7 @@ mod platform {
     use super::DiskSpace;
     use std::path::Path;
 
-    pub fn disk_space(path: &Path) -> Option<DiskSpace> {
+    pub fn disk_space(_path: &Path) -> Option<DiskSpace> {
         Some(DiskSpace {
             bytes_available: 10 * 1024 * 1024 * 1024,
             bytes_total: 100 * 1024 * 1024 * 1024,

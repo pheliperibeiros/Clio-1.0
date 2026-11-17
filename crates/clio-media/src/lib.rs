@@ -16,9 +16,8 @@
 //!
 //! Nota: O pipeline GStreamer real está por trás da feature flag `gst`.
 //! Sem a feature, o crate compila com stubs que permitem desenvolver a UI e rodar testes unitários.
-#![forbid(unsafe_code)]
-#![warn(clippy::all, clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
+#![deny(unsafe_code)]
+#![warn(clippy::all)]
 
 pub mod devices;
 pub mod error;
@@ -28,7 +27,7 @@ pub mod space_monitor;
 pub mod vu;
 pub mod wake_lock;
 
-pub use devices::{DeviceInfo, DeviceKind, DeviceMonitor};
+pub use devices::{DeviceEvent, DeviceInfo, DeviceKind, DeviceMonitor};
 pub use error::MediaError;
 pub use overlay::{OverlayParams, OverlayRenderer};
 pub use pipeline::{PipelineCommand, PipelineEvent, PipelineHandle};

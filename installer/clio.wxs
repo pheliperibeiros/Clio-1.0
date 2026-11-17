@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Clio — Gravador de Oitivas e Audiências"
+           Manufacturer="Ministério Público do Estado do Tocantins - GAECO"
+           Version="0.1.0"
+           UpgradeCode="A3E85C7B-61D3-47C2-9FB4-123456789ABC"
+           Language="1046"
+           Codepage="1252">
+
+    <MajorUpgrade DowngradeErrorMessage="Uma versão mais recente do Clio já está instalada." />
+    
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Ícone de instalação e atalhos -->
+    <Icon Id="ClioIcon" SourceFile="assets/icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="ClioIcon" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/mptogazeco/clio" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Clio">
+        <Component Id="ClioExecutable" Guid="F9D7C312-3289-4DF5-912A-112233445566">
+          <File Id="ClioExe" Source="target/release/clio.exe" KeyPath="yes">
+            <!-- Atalho no Menu Iniciar -->
+            <Shortcut Id="StartMenuShortcut"
+                      Directory="ProgramMenuFolder"
+                      Name="Clio"
+                      Description="Gravador de Oitivas e Audiências — GAECO/MPTO"
+                      Icon="ClioIcon"
+                      WorkingDirectory="INSTALLFOLDER"
+                      Advertise="yes" />
+            
+            <!-- Atalho na Área de Trabalho -->
+            <Shortcut Id="DesktopShortcut"
+                      Directory="DesktopFolder"
+                      Name="Clio"
+                      Description="Gravador de Oitivas e Audiências — GAECO/MPTO"
+                      Icon="ClioIcon"
+                      WorkingDirectory="INSTALLFOLDER"
+                      Advertise="yes" />
+          </File>
+        </Component>
+
+        <!-- Cabeçalho institucional padrão -->
+        <Component Id="HeaderAsset" Guid="E8F1A2B3-C4D5-4E6F-A7B8-998877665544">
+          <File Id="HeaderPng" Source="assets/header.png" KeyPath="yes" />
+        </Component>
+
+        <!-- Modelos padrão -->
+        <Directory Id="TemplatesFolder" Name="templates">
+          <Component Id="ExtratoTemplate" Guid="D7E6F5A4-B3C2-4D1E-8F9A-001122334455">
+            <File Id="ExtratoJ2" Source="assets/templates/extrato.default.j2" KeyPath="yes" />
+          </Component>
+          <Component Id="RelatorioTemplate" Guid="C6B5A493-8271-41E0-9F8E-AABBCCDDEEFF">
+            <File Id="RelatorioJ2" Source="assets/templates/relatorio.default.j2" KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="MainFeature" Title="Clio Completo" Level="1">
+      <ComponentRef Id="ClioExecutable" />
+      <ComponentRef Id="HeaderAsset" />
+      <ComponentRef Id="ExtratoTemplate" />
+      <ComponentRef Id="RelatorioTemplate" />
+    </Feature>
+  </Package>
+</Wix>

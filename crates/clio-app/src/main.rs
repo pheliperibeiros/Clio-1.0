@@ -8,7 +8,7 @@
 //! - Verificação de sessões sem encerramento (recuperação)
 //! - Lançamento da UI (eframe/egui)
 
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -42,22 +42,22 @@ fn main() -> anyhow::Result<()> {
 
     // ── Carregar configuração ─────────────────────────────────────────────────
     let config_storage = clio_config::ConfigStorage::new();
-    let (config, config_warnings) = config_storage.carregar()
-        .unwrap_or_else(|e| {
-            tracing::error!("Falha ao carregar configuração: {e}; usando padrão");
-            (clio_config::AppConfig::default(), vec![e.to_string()])
-        });
+    let (config, config_warnings) = config_storage.carregar().unwrap_or_else(|e| {
+        tracing::error!("Falha ao carregar configuração: {e}; usando padrão");
+        (clio_config::AppConfig::default(), vec![e.to_string()])
+    });
 
     // ── Abrir banco de dados ──────────────────────────────────────────────────
     let db_path = clio_config::storage::data_dir().join("clio.db");
-    let db = clio_store::Database::open(&db_path)
-        .context("Falha ao abrir banco de dados")?;
+    let db = clio_store::Database::open(&db_path).context("Falha ao abrir banco de dados")?;
 
     // ── Verificar sessões pendentes (recuperação) ─────────────────────────────
-    let sessoes_pendentes = db.sessoes_pendentes()
-        .unwrap_or_default();
+    let sessoes_pendentes = db.sessoes_pendentes().unwrap_or_default();
     if !sessoes_pendentes.is_empty() {
-        info!("{} sessão(ões) sem encerramento regular detectada(s)", sessoes_pendentes.len());
+        info!(
+            "{} sessão(ões) sem encerramento regular detectada(s)",
+            sessoes_pendentes.len()
+        );
     }
 
     // ── Ícone da janela ───────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ fn carregar_icone_janela() -> Option<egui::IconData> {
 
 /// Configura fontes para suporte a caracteres pt-BR.
 fn setup_fonts(ctx: &egui::Context) {
-    let mut fonts = egui::FontDefinitions::default();
+    let fonts = egui::FontDefinitions::default();
     // Noto Sans (OFL-1.1) seria adicionada aqui quando disponível nos assets/fonts/.
     // Por ora, usar fonte padrão do egui que suporta ASCII + Latin-1.
     ctx.set_fonts(fonts);
@@ -131,8 +131,12 @@ fn setup_fonts(ctx: &egui::Context) {
 fn dark_visuals() -> egui::Visuals {
     let mut v = egui::Visuals::dark();
     // Leve suavização das bordas
-    v.window_rounding = egui::Rounding::same(4.0);
-    v.widget_rounding = egui::Rounding::same(3.0);
+    v.window_corner_radius = egui::CornerRadius::same(4);
+    v.menu_corner_radius = egui::CornerRadius::same(4);
+    v.widgets.noninteractive.corner_radius = egui::CornerRadius::same(3);
+    v.widgets.inactive.corner_radius = egui::CornerRadius::same(3);
+    v.widgets.hovered.corner_radius = egui::CornerRadius::same(3);
+    v.widgets.active.corner_radius = egui::CornerRadius::same(3);
     // Cor de acento institucional (azul MPTO)
     v.selection.bg_fill = egui::Color32::from_rgb(0, 90, 160);
     v
@@ -140,9 +144,10 @@ fn dark_visuals() -> egui::Visuals {
 
 /// Define o AppUserModelID para agrupamento correto na barra de tarefas do Windows.
 #[cfg(target_os = "windows")]
+#[allow(unsafe_code)]
 fn set_app_user_model_id() {
-    use windows::core::HSTRING;
     use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
+    use windows::core::HSTRING;
 
     let app_id = HSTRING::from("br.mp.to.gaeco.clio");
     // SAFETY: chamada à Windows API documentada; veja módulo wake_lock para justificativa.

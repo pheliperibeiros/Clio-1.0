@@ -12,7 +12,9 @@ pub enum CoreError {
         to: crate::recording::RecordingState,
     },
 
-    #[error("Número de OAB inválido: '{0}' (esperado: letras, barra, estado e dígitos, ex.: OAB/TO 1234)")]
+    #[error(
+        "Número de OAB inválido: '{0}' (esperado: letras, barra, estado e dígitos, ex.: OAB/TO 1234)"
+    )]
     InvalidOab(String),
 
     #[error("Campo obrigatório ausente: {0}")]

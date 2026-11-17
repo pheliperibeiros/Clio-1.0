@@ -1,9 +1,9 @@
 //! Raiz da aplicação eframe — orquestra o loop de UI.
 
-use eframe::Frame;
-use egui::Context;
 use crate::app_state::AppState;
 use crate::ui;
+use eframe::Frame;
+use egui::Context;
 
 pub struct ClioApp {
     state: AppState,

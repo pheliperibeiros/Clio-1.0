@@ -69,9 +69,18 @@ pub struct Resolution {
 }
 
 impl Resolution {
-    pub const FULL_HD: Self = Self { width: 1920, height: 1080 };
-    pub const HD: Self = Self { width: 1280, height: 720 };
-    pub const PREVIEW: Self = Self { width: 960, height: 540 };
+    pub const FULL_HD: Self = Self {
+        width: 1920,
+        height: 1080,
+    };
+    pub const HD: Self = Self {
+        width: 1280,
+        height: 720,
+    };
+    pub const PREVIEW: Self = Self {
+        width: 960,
+        height: 540,
+    };
 }
 
 impl fmt::Display for Resolution {

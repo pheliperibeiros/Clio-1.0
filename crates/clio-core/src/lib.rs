@@ -2,8 +2,7 @@
 //!
 //! Sem I/O, sem UI, sem GStreamer. Apenas lógica pura e testável.
 #![forbid(unsafe_code)]
-#![warn(clippy::all, clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
+#![warn(clippy::all)]
 
 pub mod error;
 pub mod filename;

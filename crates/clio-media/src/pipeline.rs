@@ -28,11 +28,11 @@
 //! insere/descarta amostras para corrigir timestamps inconsistentes, eliminando
 //! o drift de clock entre dispositivos USB independentes.
 
-use crossbeam_channel::{Sender, Receiver, unbounded};
-use clio_config::schema::{Layout, ModoAudio};
 use crate::devices::DeviceInfo;
 use crate::error::{MediaError, MediaResult};
 use crate::overlay::OverlayParams;
+use clio_config::schema::{Layout, ModoAudio};
+use crossbeam_channel::{Receiver, Sender, unbounded};
 
 // ─── Comandos enviados pelo app ao pipeline ───────────────────────────────────
 
@@ -84,7 +84,11 @@ pub enum PipelineEvent {
     /// Nível VU atualizado para o microfone.
     VuUpdate { mic: u8, level: crate::vu::VuLevel },
     /// Frame de prévia disponível (RGBA, resolução reduzida).
-    PreviewFrame { width: u32, height: u32, data: Vec<u8> },
+    PreviewFrame {
+        width: u32,
+        height: u32,
+        data: Vec<u8>,
+    },
     /// Alerta: câmera desconectada durante gravação.
     CameraLost { cam: u8 },
     /// Alerta: microfone desconectado durante gravação.
@@ -92,19 +96,31 @@ pub enum PipelineEvent {
     /// Alerta: silêncio prolongado no microfone.
     MicSilenceAlert { mic: u8 },
     /// Espaço em disco: minutos restantes.
-    DiskSpaceUpdate { minutes_remaining: f64, bytes_available: u64 },
+    DiskSpaceUpdate {
+        minutes_remaining: f64,
+        bytes_available: u64,
+    },
     /// Pipeline encerrado normalmente.
     Stopped { file_size_bytes: u64 },
     /// Erro irrecuperável.
     Error(String),
     /// Duração gravada até o momento (atualizada a cada segundo).
-    DurationUpdate { secs_recorded: u64, secs_paused: u64 },
+    DurationUpdate {
+        secs_recorded: u64,
+        secs_paused: u64,
+    },
 }
 
 /// Handle de controle do pipeline de gravação.
 pub struct PipelineHandle {
     pub cmd_tx: Sender<PipelineCommand>,
     pub event_rx: Receiver<PipelineEvent>,
+}
+
+impl std::fmt::Debug for PipelineHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PipelineHandle").finish()
+    }
 }
 
 impl PipelineHandle {
@@ -136,10 +152,7 @@ pub fn spawn_pipeline() -> PipelineHandle {
 // ─── Implementação da thread do pipeline ─────────────────────────────────────
 
 #[cfg(feature = "gst")]
-fn pipeline_thread(
-    cmd_rx: Receiver<PipelineCommand>,
-    event_tx: Sender<PipelineEvent>,
-) {
+fn pipeline_thread(cmd_rx: Receiver<PipelineCommand>, event_tx: Sender<PipelineEvent>) {
     use gstreamer as gst;
     use gstreamer::prelude::*;
     use tracing::{error, info, warn};
@@ -161,15 +174,13 @@ fn pipeline_thread(
     // Montar pipeline baseado nos parâmetros
     // (implementação completa na fase (b))
     let _ = event_tx.send(PipelineEvent::Error(
-        "Pipeline GStreamer completo implementado na fase (b)".to_string()
+        "Pipeline GStreamer completo implementado na fase (b)".to_string(),
     ));
 }
 
 #[cfg(not(feature = "gst"))]
-fn pipeline_thread(
-    cmd_rx: Receiver<PipelineCommand>,
-    event_tx: Sender<PipelineEvent>,
-) {
+#[allow(unused_assignments, unused_variables)]
+fn pipeline_thread(cmd_rx: Receiver<PipelineCommand>, event_tx: Sender<PipelineEvent>) {
     use std::time::{Duration, Instant};
     use tracing::{info, warn};
 
@@ -186,7 +197,9 @@ fn pipeline_thread(
         // Processar comandos disponíveis
         while let Ok(cmd) = cmd_rx.try_recv() {
             match cmd {
-                PipelineCommand::Start { output_path: path, .. } => {
+                PipelineCommand::Start {
+                    output_path: path, ..
+                } => {
                     recording = true;
                     start_time = Some(Instant::now());
                     output_path = Some(path.clone());
@@ -228,8 +241,8 @@ fn pipeline_thread(
         if recording {
             if let Some(t) = start_time {
                 let elapsed = t.elapsed().as_secs();
-                let cur_paused = paused_secs
-                    + pause_start.map(|p| p.elapsed().as_secs()).unwrap_or(0);
+                let cur_paused =
+                    paused_secs + pause_start.map(|p| p.elapsed().as_secs()).unwrap_or(0);
                 let _ = event_tx.send(PipelineEvent::DurationUpdate {
                     secs_recorded: elapsed.saturating_sub(cur_paused),
                     secs_paused: cur_paused,
@@ -252,10 +265,10 @@ fn pipeline_thread(
 pub fn detect_best_h264_encoder() -> Option<(&'static str, &'static str)> {
     use gstreamer::prelude::*;
     let candidates = [
-        ("nvh264enc",   "NVIDIA NVENC"),
-        ("qsvh264enc",  "Intel Quick Sync"),
-        ("amfh264enc",  "AMD AMF"),
-        ("mfh264enc",   "Windows Media Foundation"),
+        ("nvh264enc", "NVIDIA NVENC"),
+        ("qsvh264enc", "Intel Quick Sync"),
+        ("amfh264enc", "AMD AMF"),
+        ("mfh264enc", "Windows Media Foundation"),
         ("openh264enc", "OpenH264 (Cisco BSD)"),
         // x264enc omitido intencionalmente (GPL); adicionar apenas com decisão documentada.
     ];

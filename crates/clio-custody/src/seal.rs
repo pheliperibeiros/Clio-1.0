@@ -8,9 +8,9 @@
 //! - Garante não-repúdio perante um tribunal sem cadeia de custódia adicional.
 //! A impressão digital da chave pública aparece no Extrato como registro informativo.
 
-use ed25519_dalek::{SigningKey, VerifyingKey, Signer, Verifier, Signature};
 use crate::error::{CustodyError, CustodyResult};
 use crate::manifest::Manifest;
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 
 /// Nome da entrada no chaveiro do sistema.
 const KEYRING_SERVICE: &str = "br.mp.to.gaeco.clio";
@@ -33,16 +33,20 @@ impl LocalSeal {
         let raw_bytes = match entry.get_password() {
             Ok(hex_str) => {
                 // Chave existente
-                hex::decode(hex_str.trim())
-                    .map_err(|e| CustodyError::Signature(format!("Chave inválida no chaveiro: {e}")))?
+                hex::decode(hex_str.trim()).map_err(|e| {
+                    CustodyError::Signature(format!("Chave inválida no chaveiro: {e}"))
+                })?
             }
             Err(_) => {
                 // Primeira execução: gerar nova chave
-                let key = SigningKey::generate(&mut rand::rngs::OsRng);
+                use rand::RngCore;
+                let mut secret_bytes = [0u8; 32];
+                rand::rngs::OsRng.fill_bytes(&mut secret_bytes);
+                let key = SigningKey::from_bytes(&secret_bytes);
                 let bytes = key.to_bytes();
-                entry
-                    .set_password(&hex::encode(bytes))
-                    .map_err(|e| CustodyError::KeyNotFound(format!("Não foi possível salvar no chaveiro: {e}")))?;
+                entry.set_password(&hex::encode(bytes)).map_err(|e| {
+                    CustodyError::KeyNotFound(format!("Não foi possível salvar no chaveiro: {e}"))
+                })?;
                 bytes.to_vec()
             }
         };
@@ -53,7 +57,10 @@ impl LocalSeal {
         let signing_key = SigningKey::from_bytes(&bytes);
         let fingerprint = Self::compute_fingerprint(&signing_key.verifying_key());
 
-        Ok(Self { signing_key, fingerprint })
+        Ok(Self {
+            signing_key,
+            fingerprint,
+        })
     }
 
     /// Impressão digital: hex dos primeiros 8 bytes da chave pública.
@@ -77,23 +84,22 @@ impl LocalSeal {
 
     /// Verifica a assinatura de um manifesto já selado.
     pub fn verificar(manifesto: &Manifest, chave_publica_hex: &str) -> SealResult<bool> {
-        let sig_hex = manifesto
-            .assinatura_ed25519
-            .as_deref()
-            .ok_or_else(|| CustodyError::Signature("Manifesto não contém assinatura".to_string()))?;
+        let sig_hex = manifesto.assinatura_ed25519.as_deref().ok_or_else(|| {
+            CustodyError::Signature("Manifesto não contém assinatura".to_string())
+        })?;
 
         let sig_bytes = hex::decode(sig_hex)
             .map_err(|e| CustodyError::Signature(format!("Assinatura inválida: {e}")))?;
-        let sig_arr: [u8; 64] = sig_bytes
-            .try_into()
-            .map_err(|_| CustodyError::Signature("Comprimento da assinatura inválido".to_string()))?;
+        let sig_arr: [u8; 64] = sig_bytes.try_into().map_err(|_| {
+            CustodyError::Signature("Comprimento da assinatura inválido".to_string())
+        })?;
         let signature = Signature::from_bytes(&sig_arr);
 
         let pk_bytes = hex::decode(chave_publica_hex)
             .map_err(|e| CustodyError::Signature(format!("Chave pública inválida: {e}")))?;
-        let pk_arr: [u8; 32] = pk_bytes
-            .try_into()
-            .map_err(|_| CustodyError::Signature("Comprimento da chave pública inválido".to_string()))?;
+        let pk_arr: [u8; 32] = pk_bytes.try_into().map_err(|_| {
+            CustodyError::Signature("Comprimento da chave pública inválido".to_string())
+        })?;
         let verifying_key = VerifyingKey::from_bytes(&pk_arr)
             .map_err(|e| CustodyError::Signature(e.to_string()))?;
 

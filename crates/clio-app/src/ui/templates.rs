@@ -1,8 +1,8 @@
 //! Aba de editor de modelos de texto.
 
-use egui::Ui;
-use clio_report::{TemplateEngine, TipoDocumento};
 use crate::app_state::{AppState, TemplateTab};
+use clio_report::TemplateEngine;
+use egui::Ui;
 
 pub fn show_templates_tab(ui: &mut Ui, state: &mut AppState) {
     ui.heading("Editor de Modelos de Texto");
@@ -10,10 +10,22 @@ pub fn show_templates_tab(ui: &mut Ui, state: &mut AppState) {
 
     // Abas Extrato / Relatório
     ui.horizontal(|ui| {
-        if ui.selectable_label(state.template_editor.active_tab == TemplateTab::Extrato, "Extrato").clicked() {
+        if ui
+            .selectable_label(
+                state.template_editor.active_tab == TemplateTab::Extrato,
+                "Extrato",
+            )
+            .clicked()
+        {
             state.template_editor.active_tab = TemplateTab::Extrato;
         }
-        if ui.selectable_label(state.template_editor.active_tab == TemplateTab::Relatorio, "Relatório").clicked() {
+        if ui
+            .selectable_label(
+                state.template_editor.active_tab == TemplateTab::Relatorio,
+                "Relatório",
+            )
+            .clicked()
+        {
             state.template_editor.active_tab = TemplateTab::Relatorio;
         }
     });
@@ -26,7 +38,9 @@ pub fn show_templates_tab(ui: &mut Ui, state: &mut AppState) {
         TemplateTab::Extrato => {
             // Inicializar com padrão se vazio
             if state.template_editor.extrato_source.is_empty() {
-                state.template_editor.extrato_source = state.config.modelos
+                state.template_editor.extrato_source = state
+                    .config
+                    .modelos
                     .extrato_template
                     .clone()
                     .unwrap_or_else(|| clio_report::template::DEFAULT_EXTRATO.to_string());
@@ -46,25 +60,38 @@ pub fn show_templates_tab(ui: &mut Ui, state: &mut AppState) {
                 if ui.button("💾 Salvar modelo").clicked() {
                     match engine.validar(&state.template_editor.extrato_source) {
                         Ok(_) => {
-                            state.config.modelos.salvar_extrato(
-                                state.template_editor.extrato_source.clone()
-                            );
+                            state
+                                .config
+                                .modelos
+                                .salvar_extrato(state.template_editor.extrato_source.clone());
                             state.config_dirty = true;
-                            state.push_toast(crate::app_state::Toast::success("Modelo do Extrato salvo"));
+                            state.push_toast(crate::app_state::Toast::success(
+                                "Modelo do Extrato salvo",
+                            ));
                         }
                         Err(e) => {
-                            state.push_toast(crate::app_state::Toast::error(format!("Modelo inválido: {e}")));
+                            state.push_toast(crate::app_state::Toast::error(format!(
+                                "Modelo inválido: {e}"
+                            )));
                         }
                     }
                 }
                 if ui.button("🔄 Restaurar padrão").clicked() {
-                    state.template_editor.extrato_source = clio_report::template::DEFAULT_EXTRATO.to_string();
+                    state.template_editor.extrato_source =
+                        clio_report::template::DEFAULT_EXTRATO.to_string();
                     state.config.modelos.extrato_template = None;
                     state.config_dirty = true;
                 }
                 if !state.config.modelos.extrato_historico.is_empty() {
                     ui.menu_button("📜 Histórico", |ui| {
-                        for (i, hist) in state.config.modelos.extrato_historico.iter().enumerate().rev() {
+                        for (i, hist) in state
+                            .config
+                            .modelos
+                            .extrato_historico
+                            .iter()
+                            .enumerate()
+                            .rev()
+                        {
                             if ui.button(format!("Versão {}", i + 1)).clicked() {
                                 state.template_editor.extrato_source = hist.clone();
                                 ui.close_menu();
@@ -76,7 +103,9 @@ pub fn show_templates_tab(ui: &mut Ui, state: &mut AppState) {
         }
         TemplateTab::Relatorio => {
             if state.template_editor.relatorio_source.is_empty() {
-                state.template_editor.relatorio_source = state.config.modelos
+                state.template_editor.relatorio_source = state
+                    .config
+                    .modelos
                     .relatorio_template
                     .clone()
                     .unwrap_or_else(|| clio_report::template::DEFAULT_RELATORIO.to_string());
@@ -96,19 +125,25 @@ pub fn show_templates_tab(ui: &mut Ui, state: &mut AppState) {
                 if ui.button("💾 Salvar modelo").clicked() {
                     match engine.validar(&state.template_editor.relatorio_source) {
                         Ok(_) => {
-                            state.config.modelos.salvar_relatorio(
-                                state.template_editor.relatorio_source.clone()
-                            );
+                            state
+                                .config
+                                .modelos
+                                .salvar_relatorio(state.template_editor.relatorio_source.clone());
                             state.config_dirty = true;
-                            state.push_toast(crate::app_state::Toast::success("Modelo do Relatório salvo"));
+                            state.push_toast(crate::app_state::Toast::success(
+                                "Modelo do Relatório salvo",
+                            ));
                         }
                         Err(e) => {
-                            state.push_toast(crate::app_state::Toast::error(format!("Modelo inválido: {e}")));
+                            state.push_toast(crate::app_state::Toast::error(format!(
+                                "Modelo inválido: {e}"
+                            )));
                         }
                     }
                 }
                 if ui.button("🔄 Restaurar padrão").clicked() {
-                    state.template_editor.relatorio_source = clio_report::template::DEFAULT_RELATORIO.to_string();
+                    state.template_editor.relatorio_source =
+                        clio_report::template::DEFAULT_RELATORIO.to_string();
                     state.config.modelos.relatorio_template = None;
                     state.config_dirty = true;
                 }
@@ -154,8 +189,10 @@ fn template_editor_pane(
             }
             if let Some(err) = error {
                 ui.add_space(4.0);
-                ui.colored_label(egui::Color32::from_rgb(255, 100, 100),
-                    egui::RichText::new(format!("⚠ {err}")).size(12.0));
+                ui.colored_label(
+                    egui::Color32::from_rgb(255, 100, 100),
+                    egui::RichText::new(format!("⚠ {err}")).size(12.0),
+                );
             }
         });
 

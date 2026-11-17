@@ -1,7 +1,7 @@
 //! Backup rotativo dos últimos N arquivos de configuração.
 
-use std::path::{Path, PathBuf};
 use crate::error::{ConfigError, ConfigResult};
+use std::path::{Path, PathBuf};
 
 pub const MAX_BACKUPS: usize = 5;
 
@@ -30,9 +30,7 @@ pub fn rotacionar_backups(config_path: &Path) -> ConfigResult<()> {
 
 /// Restaura o backup mais recente válido.
 /// Retorna o caminho do backup restaurado, ou erro se nenhum for válido.
-pub fn restaurar_backup_valido(
-    config_path: &Path,
-) -> ConfigResult<PathBuf> {
+pub fn restaurar_backup_valido(config_path: &Path) -> ConfigResult<PathBuf> {
     for i in 1..=MAX_BACKUPS {
         let bak = backup_path(config_path, i);
         if bak.exists() {
@@ -50,7 +48,11 @@ pub fn restaurar_backup_valido(
 
 pub fn backup_path(config_path: &Path, n: usize) -> PathBuf {
     let mut p = config_path.to_path_buf();
-    let nome = p.file_name().unwrap_or_default().to_string_lossy().into_owned();
+    let nome = p
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned();
     p.set_file_name(format!("{nome}.bak.{n}"));
     p
 }

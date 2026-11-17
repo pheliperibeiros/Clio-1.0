@@ -1,7 +1,7 @@
 //! Leitura e gravação atômica do config.toml.
 
 use std::path::{Path, PathBuf};
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 use crate::backup;
 use crate::error::{ConfigError, ConfigResult};
@@ -46,7 +46,9 @@ pub struct ConfigStorage {
 impl ConfigStorage {
     pub fn new() -> Self {
         let dir = config_dir();
-        Self { path: dir.join("config.toml") }
+        Self {
+            path: dir.join("config.toml"),
+        }
     }
 
     pub fn with_path(path: PathBuf) -> Self {
@@ -157,8 +159,8 @@ impl ConfigStorage {
             ));
         }
         // Desserializar
-        let valor: toml::Value = toml::from_str(&content)
-            .map_err(|e| ConfigError::InvalidImport(e.to_string()))?;
+        let valor: toml::Value =
+            toml::from_str(&content).map_err(|e| ConfigError::InvalidImport(e.to_string()))?;
         let versao = valor
             .get("schema_version")
             .and_then(|v| v.as_integer())
@@ -166,8 +168,8 @@ impl ConfigStorage {
             .unwrap_or(1);
         let valor = migrations::migrar(valor, versao)?;
         let toml_str = toml::to_string(&valor)?;
-        let mut config: AppConfig = toml::from_str(&toml_str)
-            .map_err(|e| ConfigError::InvalidImport(e.to_string()))?;
+        let mut config: AppConfig =
+            toml::from_str(&toml_str).map_err(|e| ConfigError::InvalidImport(e.to_string()))?;
         config.sanitize();
         Ok(config)
     }
@@ -177,7 +179,7 @@ impl ConfigStorage {
             Ok(bak_path) => {
                 warn!("Backup restaurado de {:?}", bak_path);
                 // Preservar o arquivo corrompido com sufixo .corrupted
-                let corrupted = self.path.with_extension("toml.corrupted");
+                let _corrupted = self.path.with_extension("toml.corrupted");
                 // Já foi sobrescrito; apenas logar
                 let warnings = vec![format!(
                     "Arquivo de configuração corrompido. Backup restaurado de: {}",
@@ -185,8 +187,7 @@ impl ConfigStorage {
                 )];
                 // Recarregar normalmente
                 let content = std::fs::read_to_string(&self.path)?;
-                let mut config: AppConfig = toml::from_str(&content)
-                    .unwrap_or_default();
+                let mut config: AppConfig = toml::from_str(&content).unwrap_or_default();
                 let mut w2 = config.sanitize();
                 let mut all_warnings = warnings;
                 all_warnings.append(&mut w2);
@@ -196,7 +197,9 @@ impl ConfigStorage {
                 error!("Nenhum backup válido encontrado; usando configuração padrão");
                 Ok((
                     AppConfig::default(),
-                    vec!["Configuração corrompida; nenhum backup válido. Usando padrão.".to_string()],
+                    vec![
+                        "Configuração corrompida; nenhum backup válido. Usando padrão.".to_string(),
+                    ],
                 ))
             }
         }
@@ -214,14 +217,6 @@ mod tests {
     use super::*;
     use std::io::Write;
 
-    fn tmp_storage() -> (tempfile::TempDir, ConfigStorage) {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("config.toml");
-        let storage = ConfigStorage::with_path(path);
-        (dir, storage)
-    }
-
-    // Nota: tempfile não está no workspace; este teste usa std::env::temp_dir diretamente.
     #[test]
     fn salvar_e_carregar_roundtrip() {
         let dir = std::env::temp_dir().join("clio_config_test_roundtrip");

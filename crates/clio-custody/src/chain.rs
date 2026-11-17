@@ -7,9 +7,9 @@
 //! O hash final do arquivo calculado de forma incremental (lendo em blocos de 1 MiB)
 //! coincide com o SHA256 do arquivo completo.
 
-use sha2::{Sha256, Digest};
-use serde::{Deserialize, Serialize};
 use crate::error::CustodyResult;
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 /// Tamanho de cada bloco da cadeia: 4 MiB.
 pub const CHAIN_BLOCK_SIZE: usize = 4 * 1024 * 1024;
@@ -72,11 +72,7 @@ impl HashChain {
     }
 
     fn flush_block(&mut self) {
-        let block_hash_bytes: [u8; 32] = self
-            .block_hasher
-            .clone()
-            .finalize()
-            .into();
+        let block_hash_bytes: [u8; 32] = self.block_hasher.clone().finalize().into();
         self.block_hasher = Sha256::new(); // reset
 
         let chain_hash_bytes = if let Some(prev) = self.ultimo_chain_hash {
@@ -128,10 +124,7 @@ impl Default for HashChain {
 /// Calcula o SHA-256 de um arquivo inteiro em blocos de 1 MiB,
 /// sem carregar o arquivo em memória.
 /// Reporta progresso via callback `on_progress(bytes_lidos, total_bytes)`.
-pub fn hash_arquivo<P, F>(
-    path: P,
-    on_progress: F,
-) -> CustodyResult<[u8; 32]>
+pub fn hash_arquivo<P, F>(path: P, on_progress: F) -> CustodyResult<[u8; 32]>
 where
     P: AsRef<std::path::Path>,
     F: Fn(u64, u64),
@@ -166,7 +159,7 @@ mod tests {
     /// Vetor conhecido: SHA256("") = e3b0c44298fc1c14...
     #[test]
     fn hash_vazio() {
-        let mut h = Sha256::new();
+        let h = Sha256::new();
         let result: [u8; 32] = h.finalize().into();
         assert_eq!(
             hex::encode(result),
@@ -182,14 +175,17 @@ mod tests {
         // Deve ter 1 bloco (dados < CHAIN_BLOCK_SIZE)
         assert_eq!(blocks.len(), 1);
         // O hash do arquivo deve ser SHA256("hello world")
-        let expected = "b94d27b9934d3e08a52e52d7da7dabfac484efe04294e576db3a0dc7f7deec32d";
+        let _expected = "b94d27b9934d3e08a52e52d7da7dabfac484efe04294e576db3a0dc7f7deec32d";
         // Nota: SHA256("hello world") real:
         // b94d27b9934d3e08a52e52d7da7dabfac484efe04294e576db3a0dc7f7deec32d
         // Vamos verificar com sha2 diretamente
         let mut h = Sha256::new();
         h.update(b"hello world");
         let direct: [u8; 32] = h.finalize().into();
-        assert_eq!(hash, direct, "hash do arquivo deve coincidir com SHA256 direto");
+        assert_eq!(
+            hash, direct,
+            "hash do arquivo deve coincidir com SHA256 direto"
+        );
     }
 
     #[test]

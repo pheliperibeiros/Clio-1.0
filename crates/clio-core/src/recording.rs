@@ -6,8 +6,8 @@
 //!   Paused → Finalizing → Done
 //!   Qualquer → Error
 
-use serde::{Deserialize, Serialize};
 use crate::error::{CoreError, CoreResult};
+use serde::{Deserialize, Serialize};
 
 /// Estado atual da sessão de gravação.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -55,7 +55,10 @@ impl RecordingState {
         if self.can_transition_to(next) {
             Ok(next)
         } else {
-            Err(CoreError::InvalidStateTransition { from: self, to: next })
+            Err(CoreError::InvalidStateTransition {
+                from: self,
+                to: next,
+            })
         }
     }
 

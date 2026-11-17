@@ -31,10 +31,7 @@ fn migrar_v1_para_v2(mut valor: toml::Value) -> ConfigResult<toml::Value> {
             .or_insert_with(|| toml::Value::String("faixas_separadas".to_string()));
     }
     if let Some(root) = valor.as_table_mut() {
-        root.insert(
-            "schema_version".to_string(),
-            toml::Value::Integer(2),
-        );
+        root.insert("schema_version".to_string(), toml::Value::Integer(2));
     }
     Ok(valor)
 }
@@ -43,29 +40,31 @@ fn migrar_v1_para_v2(mut valor: toml::Value) -> ConfigResult<toml::Value> {
 /// e `emissao.local` (padrão: "Palmas").
 fn migrar_v2_para_v3(mut valor: toml::Value) -> ConfigResult<toml::Value> {
     // identidade_visual.cabecalho_ativo
-    if let Some(iv) = valor.get_mut("identidade_visual").and_then(|v| v.as_table_mut()) {
+    if let Some(iv) = valor
+        .get_mut("identidade_visual")
+        .and_then(|v| v.as_table_mut())
+    {
         iv.entry("cabecalho_ativo")
             .or_insert_with(|| toml::Value::Boolean(true));
     }
     // emissao.local
     {
-        let root = valor.as_table_mut().ok_or_else(|| {
-            ConfigError::MigrationFailed {
+        let root = valor
+            .as_table_mut()
+            .ok_or_else(|| ConfigError::MigrationFailed {
                 from: 2,
                 to: 3,
                 reason: "raiz não é tabela TOML".to_string(),
-            }
-        })?;
-        root.entry("emissao")
-            .or_insert_with(|| {
-                let mut t = toml::map::Map::new();
-                t.insert("local".to_string(), toml::Value::String("Palmas".to_string()));
-                toml::Value::Table(t)
-            });
-        root.insert(
-            "schema_version".to_string(),
-            toml::Value::Integer(3),
-        );
+            })?;
+        root.entry("emissao").or_insert_with(|| {
+            let mut t = toml::map::Map::new();
+            t.insert(
+                "local".to_string(),
+                toml::Value::String("Palmas".to_string()),
+            );
+            toml::Value::Table(t)
+        });
+        root.insert("schema_version".to_string(), toml::Value::Integer(3));
     }
     Ok(valor)
 }

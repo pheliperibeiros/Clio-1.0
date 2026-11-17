@@ -1,7 +1,7 @@
 //! Lock de instância única via arquivo de lock.
 
+use anyhow::{Context, Result};
 use std::path::PathBuf;
-use anyhow::{bail, Context, Result};
 
 pub struct SingleInstanceLock {
     _file: std::fs::File,

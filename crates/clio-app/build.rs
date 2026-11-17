@@ -20,7 +20,10 @@ fn embed_icon_windows() {
     res.set_icon("../../assets/icon.ico");
     res.set("FileDescription", "Clio — Gravador de Oitivas e Audiências");
     res.set("ProductName", "Clio");
-    res.set("CompanyName", "Ministério Público do Estado do Tocantins — GAECO");
+    res.set(
+        "CompanyName",
+        "Ministério Público do Estado do Tocantins — GAECO",
+    );
     res.set("LegalCopyright", "MPTO — uso institucional");
     res.set(
         "FileVersion",

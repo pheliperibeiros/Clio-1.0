@@ -1,8 +1,8 @@
 //! Abertura e migração do banco de dados SQLite principal.
 
+use crate::error::StoreResult;
 use rusqlite::{Connection, params};
 use tracing::info;
-use crate::error::StoreResult;
 
 pub const DB_VERSION: u32 = 1;
 
@@ -20,12 +20,14 @@ impl Database {
         }
         let conn = Connection::open(path)?;
         // Configurações de durabilidade
-        conn.execute_batch("
+        conn.execute_batch(
+            "
             PRAGMA journal_mode = WAL;
             PRAGMA synchronous = FULL;
             PRAGMA foreign_keys = ON;
             PRAGMA temp_store = MEMORY;
-        ")?;
+        ",
+        )?;
         let mut db = Self { conn };
         db.migrate()?;
         Ok(db)
@@ -34,11 +36,13 @@ impl Database {
     /// Abre o banco em memória (apenas para testes).
     pub fn open_in_memory() -> StoreResult<Self> {
         let conn = Connection::open_in_memory()?;
-        conn.execute_batch("
+        conn.execute_batch(
+            "
             PRAGMA journal_mode = WAL;
             PRAGMA synchronous = FULL;
             PRAGMA foreign_keys = ON;
-        ")?;
+        ",
+        )?;
         let mut db = Self { conn };
         db.migrate()?;
         Ok(db)
@@ -46,17 +50,18 @@ impl Database {
 
     fn migrate(&mut self) -> StoreResult<()> {
         // Criar tabela de versão se não existir
-        self.conn.execute_batch("
+        self.conn.execute_batch(
+            "
             CREATE TABLE IF NOT EXISTS schema_version (
                 version INTEGER NOT NULL
             );
-        ")?;
-        let version: u32 = self.conn
-            .query_row(
-                "SELECT version FROM schema_version LIMIT 1",
-                [],
-                |r| r.get(0),
-            )
+        ",
+        )?;
+        let version: u32 = self
+            .conn
+            .query_row("SELECT version FROM schema_version LIMIT 1", [], |r| {
+                r.get(0)
+            })
             .unwrap_or(0);
 
         if version < DB_VERSION {
@@ -85,7 +90,8 @@ impl Database {
     }
 
     fn migrate_v0_to_v1(&mut self) -> StoreResult<()> {
-        self.conn.execute_batch("
+        self.conn.execute_batch(
+            "
             -- Biblioteca de gravações concluídas
             CREATE TABLE IF NOT EXISTS gravacoes (
                 id TEXT PRIMARY KEY,
@@ -157,7 +163,8 @@ impl Database {
             CREATE INDEX IF NOT EXISTS idx_gravacoes_inicio ON gravacoes(inicio_iso8601);
             CREATE INDEX IF NOT EXISTS idx_sessoes_encerramento ON sessoes(encerramento_regular);
             CREATE INDEX IF NOT EXISTS idx_eventos_sessao ON eventos_sessao(sessao_id);
-        ")?;
+        ",
+        )?;
         Ok(())
     }
 }

@@ -1,9 +1,9 @@
 //! Motor de templates baseado em minijinja (sandbox: sem loader de arquivos, sem rede).
 
-use minijinja::{Environment, Value};
 use crate::context::ReportContext;
 use crate::error::{ReportError, ReportResult};
 use crate::filters;
+use minijinja::{Environment, Value};
 
 /// Tamanho máximo de um modelo de texto: 256 KB.
 pub const MAX_TEMPLATE_BYTES: usize = 256 * 1024;
@@ -29,8 +29,6 @@ impl TemplateEngine {
 
         // Sandbox: sem loader de arquivos nem de rede
         // O minijinja por padrão não tem loader, então não há risco de acesso externo.
-        // Garantir que includes são proibidos:
-        env.set_max_local_vars(50);
 
         // Registrar filtros customizados
         env.add_filter("data_longa", filters::filtro_data_longa);
@@ -54,22 +52,18 @@ impl TemplateEngine {
         }
         // Tentar renderizar com contexto de exemplo para detectar erros de sintaxe e variáveis
         let ctx = ReportContext::exemplo();
-        let ctx_val = ctx.to_value().map_err(|e| ReportError::Template(e.to_string()))?;
+        let ctx_val = Value::from_serialize(&ctx);
         self.renderizar_raw(source, ctx_val).map(|_| ())
     }
 
     /// Renderiza um modelo com o contexto fornecido.
-    pub fn renderizar(
-        &self,
-        source: &str,
-        ctx: &ReportContext,
-    ) -> ReportResult<String> {
+    pub fn renderizar(&self, source: &str, ctx: &ReportContext) -> ReportResult<String> {
         if source.len() > MAX_TEMPLATE_BYTES {
             return Err(ReportError::TemplateTooLarge {
                 max_bytes: MAX_TEMPLATE_BYTES,
             });
         }
-        let ctx_val = ctx.to_value().map_err(|e| ReportError::Template(e.to_string()))?;
+        let ctx_val = Value::from_serialize(ctx);
         self.renderizar_raw(source, ctx_val)
     }
 
@@ -78,21 +72,20 @@ impl TemplateEngine {
         let mut env = self.env.clone();
         env.add_template_owned("doc", source.to_string())
             .map_err(|e| self.jinja_error_to_report(e, source))?;
-        let tmpl = env.get_template("doc")
+        let tmpl = env
+            .get_template("doc")
             .map_err(|e| self.jinja_error_to_report(e, source))?;
         tmpl.render(ctx)
             .map_err(|e| self.jinja_error_to_report(e, source))
     }
 
-    fn jinja_error_to_report(&self, e: minijinja::Error, source: &str) -> ReportError {
+    fn jinja_error_to_report(&self, e: minijinja::Error, _source: &str) -> ReportError {
         let line = e.line().unwrap_or(0);
         let msg = e.to_string();
         // Detectar variável desconhecida vs sintaxe
         if msg.contains("undefined") || msg.contains("unknown") {
             // Tentar extrair nome da variável
-            let var = e.detail()
-                .unwrap_or("variável desconhecida")
-                .to_string();
+            let var = e.detail().unwrap_or("variável desconhecida").to_string();
             ReportError::UnknownVariable { var, line }
         } else {
             ReportError::InvalidSyntax { line, msg }
@@ -129,12 +122,10 @@ impl Default for TemplateEngine {
 }
 
 /// Template padrão do Extrato (embutido no binário).
-pub const DEFAULT_EXTRATO: &str =
-    include_str!("../../../assets/templates/extrato.default.j2");
+pub const DEFAULT_EXTRATO: &str = include_str!("../../../assets/templates/extrato.default.j2");
 
 /// Template padrão do Relatório (embutido no binário).
-pub const DEFAULT_RELATORIO: &str =
-    include_str!("../../../assets/templates/relatorio.default.j2");
+pub const DEFAULT_RELATORIO: &str = include_str!("../../../assets/templates/relatorio.default.j2");
 
 #[cfg(test)]
 mod tests {

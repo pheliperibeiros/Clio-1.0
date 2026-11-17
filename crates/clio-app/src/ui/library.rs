@@ -1,7 +1,7 @@
 //! Aba Biblioteca de gravações.
 
-use egui::Ui;
 use crate::app_state::{AppState, ConfirmAction, ConfirmDialog};
+use egui::Ui;
 
 pub fn show_library_tab(ui: &mut Ui, state: &mut AppState) {
     ui.heading("Biblioteca de Gravações");
@@ -27,7 +27,11 @@ pub fn show_library_tab(ui: &mut Ui, state: &mut AppState) {
 
     if gravacoes.is_empty() {
         ui.centered_and_justified(|ui| {
-            ui.label(egui::RichText::new("Nenhuma gravação encontrada").color(egui::Color32::GRAY).size(16.0));
+            ui.label(
+                egui::RichText::new("Nenhuma gravação encontrada")
+                    .color(egui::Color32::GRAY)
+                    .size(16.0),
+            );
         });
         return;
     }
@@ -73,7 +77,7 @@ pub fn show_library_tab(ui: &mut Ui, state: &mut AppState) {
 
                 ui.horizontal(|ui| {
                     if ui.small_button("▶ Abrir vídeo").clicked() {
-                        let _ = opener::open(&grav.arquivo_path);
+                        open_in_system(&grav.arquivo_path);
                     }
                     if ui.small_button("📄 Extrato PDF").clicked() {
                         // Integração de exportação na fase (e)
@@ -87,7 +91,7 @@ pub fn show_library_tab(ui: &mut Ui, state: &mut AppState) {
                     }
                     if ui.small_button("📦 Manifesto").clicked() {
                         if let Some(mp) = &grav.manifesto_path {
-                            let _ = opener::open(mp);
+                            open_in_system(mp);
                         }
                     }
 
@@ -121,7 +125,11 @@ fn format_duration(secs: u64) -> String {
     let h = secs / 3600;
     let m = (secs % 3600) / 60;
     let s = secs % 60;
-    if h > 0 { format!("{h}h {m:02}min") } else { format!("{m}min {s:02}s") }
+    if h > 0 {
+        format!("{h}h {m:02}min")
+    } else {
+        format!("{m}min {s:02}s")
+    }
 }
 
 fn format_bytes(bytes: u64) -> String {
@@ -131,5 +139,20 @@ fn format_bytes(bytes: u64) -> String {
         format!("{:.1} GB", bytes as f64 / GB as f64)
     } else {
         format!("{:.0} MB", bytes as f64 / MB as f64)
+    }
+}
+
+fn open_in_system(path: &str) {
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("explorer").arg(path).spawn();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = std::process::Command::new("xdg-open").arg(path).spawn();
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        let _ = path;
     }
 }

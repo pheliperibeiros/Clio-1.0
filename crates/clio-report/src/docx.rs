@@ -5,9 +5,9 @@
 //!
 //! Validação: o ZIP gerado deve abrir no Word e no LibreOffice sem aviso de reparo.
 
+use crate::error::{ReportError, ReportResult};
 use std::io::{Cursor, Write};
 use zip::{ZipWriter, write::FileOptions};
-use crate::error::{ReportError, ReportResult};
 
 /// Tipo de documento OOXML.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,7 +37,8 @@ pub struct DocxParams<'a> {
 
 /// Gera DOCX ou DOTX e retorna os bytes.
 pub fn gerar_docx(params: &DocxParams<'_>) -> ReportResult<Vec<u8>> {
-    let cabecalho_bytes = params.cabecalho_bytes
+    let cabecalho_bytes = params
+        .cabecalho_bytes
         .unwrap_or(crate::pdf::DEFAULT_HEADER_BYTES);
 
     // Validar imagem
@@ -47,8 +48,8 @@ pub fn gerar_docx(params: &DocxParams<'_>) -> ReportResult<Vec<u8>> {
     let buf = Vec::new();
     let cursor = Cursor::new(buf);
     let mut zip = ZipWriter::new(cursor);
-    let opts: FileOptions<()> = FileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+    let opts: FileOptions<()> =
+        FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
     // ── [Content_Types].xml ───────────────────────────────────────────────────
     zip.start_file("[Content_Types].xml", opts)
@@ -59,8 +60,7 @@ pub fn gerar_docx(params: &DocxParams<'_>) -> ReportResult<Vec<u8>> {
     // ── _rels/.rels ───────────────────────────────────────────────────────────
     zip.start_file("_rels/.rels", opts)
         .map_err(|e| ReportError::Docx(e.to_string()))?;
-    write!(zip, "{}", rels_xml())
-        .map_err(|e| ReportError::Docx(e.to_string()))?;
+    write!(zip, "{}", rels_xml()).map_err(|e| ReportError::Docx(e.to_string()))?;
 
     // ── word/_rels/document.xml.rels ─────────────────────────────────────────
     zip.start_file("word/_rels/document.xml.rels", opts)
@@ -83,8 +83,7 @@ pub fn gerar_docx(params: &DocxParams<'_>) -> ReportResult<Vec<u8>> {
     // ── word/_rels/header1.xml.rels ───────────────────────────────────────────
     zip.start_file("word/_rels/header1.xml.rels", opts)
         .map_err(|e| ReportError::Docx(e.to_string()))?;
-    write!(zip, "{}", header1_rels_xml())
-        .map_err(|e| ReportError::Docx(e.to_string()))?;
+    write!(zip, "{}", header1_rels_xml()).map_err(|e| ReportError::Docx(e.to_string()))?;
 
     // ── word/document.xml ─────────────────────────────────────────────────────
     zip.start_file("word/document.xml", opts)
@@ -104,14 +103,12 @@ pub fn gerar_docx(params: &DocxParams<'_>) -> ReportResult<Vec<u8>> {
     // ── word/styles.xml ───────────────────────────────────────────────────────
     zip.start_file("word/styles.xml", opts)
         .map_err(|e| ReportError::Docx(e.to_string()))?;
-    write!(zip, "{}", styles_xml())
-        .map_err(|e| ReportError::Docx(e.to_string()))?;
+    write!(zip, "{}", styles_xml()).map_err(|e| ReportError::Docx(e.to_string()))?;
 
     // ── word/settings.xml ─────────────────────────────────────────────────────
     zip.start_file("word/settings.xml", opts)
         .map_err(|e| ReportError::Docx(e.to_string()))?;
-    write!(zip, "{}", settings_xml())
-        .map_err(|e| ReportError::Docx(e.to_string()))?;
+    write!(zip, "{}", settings_xml()).map_err(|e| ReportError::Docx(e.to_string()))?;
 
     // ── docProps/core.xml ─────────────────────────────────────────────────────
     zip.start_file("docProps/core.xml", opts)
@@ -158,8 +155,7 @@ fn rels_xml() -> &'static str {
 </Relationships>"#
 }
 
-fn document_rels_xml(todas_paginas: bool) -> String {
-    let header_type = if todas_paginas { "default" } else { "first" };
+fn document_rels_xml(_todas_paginas: bool) -> String {
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -435,8 +431,14 @@ mod tests {
         let mut h = archive.by_name("word/header1.xml").unwrap();
         let mut content = String::new();
         std::io::Read::read_to_string(&mut h, &mut content).unwrap();
-        assert!(content.contains("pic:pic"), "header1.xml deve conter imagem");
-        assert!(content.contains("rId1"), "header1.xml deve referenciar rId1");
+        assert!(
+            content.contains("pic:pic"),
+            "header1.xml deve conter imagem"
+        );
+        assert!(
+            content.contains("rId1"),
+            "header1.xml deve referenciar rId1"
+        );
     }
 
     #[test]

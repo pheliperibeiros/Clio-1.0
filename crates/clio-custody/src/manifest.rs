@@ -1,10 +1,10 @@
 //! Manifesto JSON da gravação — gerado ao encerrar a sessão e selado.
 
-use serde::{Deserialize, Serialize};
 use crate::chain::ChainBlock;
 use crate::error::CustodyResult;
-use clio_core::models::{Participante, Defesa, EventoSessao};
+use clio_core::models::{Defesa, EventoSessao, Participante};
 use clio_core::types::{PipelineParams, Timestamp};
+use serde::{Deserialize, Serialize};
 
 /// Manifesto completo da sessão de gravação.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -230,7 +230,7 @@ impl Manifest {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use clio_core::types::{PipelineParams, Resolution, VideoCodec, AudioCodec, Container};
+    use clio_core::types::{AudioCodec, Container, PipelineParams, Resolution, VideoCodec};
     use time::OffsetDateTime;
 
     fn params_basicos() -> Manifest {

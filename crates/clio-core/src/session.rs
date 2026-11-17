@@ -101,13 +101,19 @@ mod tests {
 
     #[test]
     fn intervalo_duracao() {
-        let i = IntervaloRecesso { inicio_unix: 100, fim_unix: Some(130) };
+        let i = IntervaloRecesso {
+            inicio_unix: 100,
+            fim_unix: Some(130),
+        };
         assert_eq!(i.duracao_secs(), 30);
     }
 
     #[test]
     fn intervalo_ativo_sem_fim() {
-        let i = IntervaloRecesso { inicio_unix: 100, fim_unix: None };
+        let i = IntervaloRecesso {
+            inicio_unix: 100,
+            fim_unix: None,
+        };
         assert_eq!(i.duracao_secs(), 0);
     }
 }

@@ -3,12 +3,12 @@
 //! Permite recuperação após crash: sessões sem `encerramento_regular = 1`
 //! são detectadas na reabertura do aplicativo.
 
-use rusqlite::params;
-use tracing::{debug, info};
 use crate::db::Database;
 use crate::error::StoreResult;
 use clio_core::models::EventoSessao;
 use clio_custody::chain::ChainBlock;
+use rusqlite::params;
+use tracing::{debug, info};
 
 /// Sessão sem encerramento regular (candidata a recuperação).
 #[derive(Debug, Clone)]
@@ -22,11 +22,18 @@ pub struct SessaoPendente {
 
 /// Wrapper para operações de diário de sessão.
 pub struct SessionJournal<'a> {
-    db: &'a Database,
+    pub db: &'a Database,
     pub sessao_id: String,
 }
 
 impl<'a> SessionJournal<'a> {
+    /// Obtém um journal existente por ID.
+    pub fn for_session(db: &'a Database, sessao_id: &str) -> Self {
+        Self {
+            db,
+            sessao_id: sessao_id.to_string(),
+        }
+    }
     /// Cria um novo registro de sessão no banco, retornando o journal ativo.
     /// Deve ser chamado ANTES de iniciar o pipeline.
     pub fn iniciar(
@@ -71,7 +78,11 @@ impl<'a> SessionJournal<'a> {
                 evento.descricao,
             ],
         )?;
-        debug!("Evento registrado: {} — {}", evento.tipo.label(), evento.descricao);
+        debug!(
+            "Evento registrado: {} — {}",
+            evento.tipo.label(),
+            evento.descricao
+        );
         Ok(())
     }
 
@@ -129,7 +140,7 @@ impl Database {
             "SELECT id, depoente_nome, processo_numero, arquivo_path, inicio_iso8601
              FROM sessoes
              WHERE encerramento_regular = 0
-             ORDER BY inicio_iso8601 DESC"
+             ORDER BY inicio_iso8601 DESC",
         )?;
         let rows = stmt.query_map([], |r| {
             Ok(SessaoPendente {
@@ -150,16 +161,17 @@ impl Database {
     }
 
     /// Carrega os eventos de uma sessão para geração do manifesto de recuperação.
-    pub fn eventos_da_sessao(
-        &self,
-        sessao_id: &str,
-    ) -> StoreResult<Vec<(String, String, String)>> {
+    pub fn eventos_da_sessao(&self, sessao_id: &str) -> StoreResult<Vec<(String, String, String)>> {
         let mut stmt = self.conn.prepare(
             "SELECT hora_iso8601, tipo, descricao FROM eventos_sessao
-             WHERE sessao_id = ?1 ORDER BY id ASC"
+             WHERE sessao_id = ?1 ORDER BY id ASC",
         )?;
         let rows = stmt.query_map(params![sessao_id], |r| {
-            Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?))
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+            ))
         })?;
         let mut result = Vec::new();
         for row in rows {
@@ -174,7 +186,7 @@ impl Database {
     pub fn cadeia_hashes_da_sessao(&self, sessao_id: &str) -> StoreResult<Vec<ChainBlock>> {
         let mut stmt = self.conn.prepare(
             "SELECT bloco_index, offset_bytes, block_hash, chain_hash
-             FROM cadeia_hashes WHERE sessao_id = ?1 ORDER BY bloco_index ASC"
+             FROM cadeia_hashes WHERE sessao_id = ?1 ORDER BY bloco_index ASC",
         )?;
         let rows = stmt.query_map(params![sessao_id], |r| {
             Ok(ChainBlock {
@@ -211,13 +223,16 @@ mod tests {
             "/gravacoes/joao.mkv",
             "2026-11-17T14:00:00Z",
             None,
-        ).unwrap();
+        )
+        .unwrap();
 
-        journal.registrar_evento(&EventoSessao {
-            hora: OffsetDateTime::now_utc(),
-            tipo: TipoEvento::InicioGravacao,
-            descricao: "Gravação iniciada".to_string(),
-        }).unwrap();
+        journal
+            .registrar_evento(&EventoSessao {
+                hora: OffsetDateTime::now_utc(),
+                tipo: TipoEvento::InicioGravacao,
+                descricao: "Gravação iniciada".to_string(),
+            })
+            .unwrap();
 
         let eventos = db.eventos_da_sessao("sess-001").unwrap();
         assert_eq!(eventos.len(), 1);
@@ -230,8 +245,15 @@ mod tests {
 
         // Criar sessão sem encerrar
         SessionJournal::iniciar(
-            &db, "sess-crash", "Pedro", "0001", "/arq.mkv", "2026-11-17T10:00:00Z", None,
-        ).unwrap();
+            &db,
+            "sess-crash",
+            "Pedro",
+            "0001",
+            "/arq.mkv",
+            "2026-11-17T10:00:00Z",
+            None,
+        )
+        .unwrap();
 
         let pendentes = db.sessoes_pendentes().unwrap();
         assert_eq!(pendentes.len(), 1);
@@ -242,11 +264,38 @@ mod tests {
     fn encerramento_regular_remove_da_lista_pendentes() {
         let db = Database::open_in_memory().unwrap();
 
-        let journal = SessionJournal::iniciar(
-            &db, "sess-ok", "Ana", "0002", "/arq2.mkv", "2026-11-17T11:00:00Z", None,
-        ).unwrap();
+        let grav = crate::library::GravacaoInfo {
+            id: "grav-001".to_string(),
+            depoente_nome: "Ana".to_string(),
+            depoente_qualificacao: "Testemunha".to_string(),
+            processo_numero: "0002".to_string(),
+            orgao: "MPTO".to_string(),
+            inicio_iso8601: "2026-11-17T11:00:00Z".to_string(),
+            fim_iso8601: Some("2026-11-17T12:00:00Z".to_string()),
+            duracao_liquida_secs: Some(3600),
+            arquivo_path: "/arq2.mkv".to_string(),
+            arquivo_tamanho_bytes: Some(100),
+            arquivo_sha256: Some("sha".to_string()),
+            status: crate::library::StatusGravacao::Concluida,
+            recuperada: false,
+            manifesto_path: None,
+        };
+        db.registrar_gravacao(&grav).unwrap();
 
-        journal.encerrar_regular("2026-11-17T12:00:00Z", "grav-001").unwrap();
+        let journal = SessionJournal::iniciar(
+            &db,
+            "sess-ok",
+            "Ana",
+            "0002",
+            "/arq2.mkv",
+            "2026-11-17T11:00:00Z",
+            None,
+        )
+        .unwrap();
+
+        journal
+            .encerrar_regular("2026-11-17T12:00:00Z", "grav-001")
+            .unwrap();
 
         let pendentes = db.sessoes_pendentes().unwrap();
         assert!(pendentes.is_empty());

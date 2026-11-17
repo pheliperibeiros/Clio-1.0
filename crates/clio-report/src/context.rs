@@ -2,7 +2,6 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
 
 /// Contexto completo passado ao motor de templates.
 /// Todos os campos correspondem às variáveis documentadas na especificação.
@@ -187,7 +186,8 @@ impl ReportContext {
             arquivo: ArquivoCtx {
                 nome: "Oitiva_Joao_da_Silva_Proc-0001234_20261117_14h00.mkv".to_string(),
                 tamanho: 1_572_864_000,
-                sha256: "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9".to_string(),
+                sha256: "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9"
+                    .to_string(),
             },
             video: VideoCtx {
                 resolucao: "1920×1080".to_string(),

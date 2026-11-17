@@ -56,17 +56,23 @@ impl AppConfig {
         // Transparência da tarja: 0–100
         let t = &mut self.video.tarja.transparencia_fundo_pct;
         if *t > 100 {
-            warnings.push(format!("video.tarja.transparencia_fundo_pct={t} → corrigido para 100"));
+            warnings.push(format!(
+                "video.tarja.transparencia_fundo_pct={t} → corrigido para 100"
+            ));
             *t = 100;
         }
 
         // Bitrate de vídeo: 500–50000 kbps
         let vbr = &mut self.gravacao.video_bitrate_kbps;
         if *vbr < 500 {
-            warnings.push(format!("gravacao.video_bitrate_kbps={vbr} → corrigido para 500"));
+            warnings.push(format!(
+                "gravacao.video_bitrate_kbps={vbr} → corrigido para 500"
+            ));
             *vbr = 500;
         } else if *vbr > 50_000 {
-            warnings.push(format!("gravacao.video_bitrate_kbps={vbr} → corrigido para 50000"));
+            warnings.push(format!(
+                "gravacao.video_bitrate_kbps={vbr} → corrigido para 50000"
+            ));
             *vbr = 50_000;
         }
 
@@ -132,7 +138,9 @@ pub enum Layout {
 }
 
 impl Default for Layout {
-    fn default() -> Self { Self::LadoALado }
+    fn default() -> Self {
+        Self::LadoALado
+    }
 }
 
 impl Layout {
@@ -210,7 +218,9 @@ impl CorTarja {
 }
 
 impl Default for CorTarja {
-    fn default() -> Self { Self::Preto }
+    fn default() -> Self {
+        Self::Preto
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -240,7 +250,9 @@ impl AlturaTarja {
 }
 
 impl Default for AlturaTarja {
-    fn default() -> Self { Self::Normal }
+    fn default() -> Self {
+        Self::Normal
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -251,7 +263,9 @@ pub enum PosicaoTarja {
 }
 
 impl Default for PosicaoTarja {
-    fn default() -> Self { Self::Inferior }
+    fn default() -> Self {
+        Self::Inferior
+    }
 }
 
 // ─── Áudio ───────────────────────────────────────────────────────────────────
@@ -302,7 +316,9 @@ pub enum ModoAudio {
 }
 
 impl Default for ModoAudio {
-    fn default() -> Self { Self::FaixasSeparadas }
+    fn default() -> Self {
+        Self::FaixasSeparadas
+    }
 }
 
 impl ModoAudio {
@@ -412,7 +428,9 @@ pub struct EmissaoConfig {
 
 impl Default for EmissaoConfig {
     fn default() -> Self {
-        Self { local: "Palmas".to_string() }
+        Self {
+            local: "Palmas".to_string(),
+        }
     }
 }
 
