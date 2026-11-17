@@ -1,0 +1,43 @@
+[package]
+name = "clio-media"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+clio-core    = { path = "../clio-core" }
+clio-config  = { path = "../clio-config" }
+clio-custody = { path = "../clio-custody" }
+
+serde       = { workspace = true }
+thiserror   = { workspace = true }
+tracing     = { workspace = true }
+anyhow      = { workspace = true }
+parking_lot = { workspace = true }
+crossbeam-channel = { workspace = true }
+once_cell   = { workspace = true }
+image       = { workspace = true }
+tiny-skia   = { workspace = true }
+
+# GStreamer — optional so the crate compiles on machines without GStreamer headers.
+# In production, `gst` feature must be enabled.
+gstreamer        = { workspace = true, optional = true }
+gstreamer-video  = { workspace = true, optional = true }
+gstreamer-audio  = { workspace = true, optional = true }
+gstreamer-app    = { workspace = true, optional = true }
+gstreamer-pbutils = { workspace = true, optional = true }
+
+[features]
+default = []
+# Enable real GStreamer pipeline (requires GStreamer runtime installed).
+gst = [
+    "dep:gstreamer",
+    "dep:gstreamer-video",
+    "dep:gstreamer-audio",
+    "dep:gstreamer-app",
+    "dep:gstreamer-pbutils",
+]

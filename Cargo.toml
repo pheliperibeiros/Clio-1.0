@@ -1,0 +1,118 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/clio-core",
+    "crates/clio-config",
+    "crates/clio-media",
+    "crates/clio-custody",
+    "crates/clio-store",
+    "crates/clio-report",
+    "crates/clio-app",
+    "xtask",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["GAECO / MPTO <gaeco@mpto.mp.br>"]
+license = "EUPL-1.2"
+repository = "https://github.com/mptogazeco/clio"
+
+[workspace.lints.rust]
+# Warn on most lints; each crate enforces #![forbid(unsafe_code)] individually.
+unused = "warn"
+nonstandard_style = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Allow common FP lints in a large codebase
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[workspace.dependencies]
+# ── Domain / serialisation ──────────────────────────────────────────────────
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+uuid = { version = "1.11", features = ["v4", "serde"] }
+time = { version = "0.3", features = ["serde", "formatting", "macros", "local-offset"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# ── Error handling & logging ────────────────────────────────────────────────
+thiserror = "2.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-appender = "0.2"
+
+# ── Async ───────────────────────────────────────────────────────────────────
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "fs", "time", "macros"] }
+
+# ── Storage ─────────────────────────────────────────────────────────────────
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# ── Hashing ─────────────────────────────────────────────────────────────────
+sha2 = "0.10"
+hex = "0.4"
+
+# ── Crypto (seal local) ─────────────────────────────────────────────────────
+ed25519-dalek = { version = "2.1", features = ["serde"] }
+rand = "0.8"
+keyring = "3.6"
+
+# ── Templating ──────────────────────────────────────────────────────────────
+minijinja = { version = "2.5", features = ["loader", "builtins"] }
+
+# ── PDF ─────────────────────────────────────────────────────────────────────
+printpdf = "0.7"
+
+# ── DOCX / ZIP ──────────────────────────────────────────────────────────────
+zip = "2.2"
+quick-xml = { version = "0.37", features = ["serialize"] }
+
+# ── Image processing ────────────────────────────────────────────────────────
+image = { version = "0.25", features = ["png", "jpeg", "ico"] }
+tiny-skia = "0.11"
+
+# ── UI ──────────────────────────────────────────────────────────────────────
+eframe = { version = "0.31", features = ["accesskit", "wgpu"] }
+egui = { version = "0.31", features = ["accesskit"] }
+egui_extras = { version = "0.31", features = ["image", "svg"] }
+
+# ── Platform / OS ───────────────────────────────────────────────────────────
+directories = "5.0"
+
+# ── Inter-thread channels ───────────────────────────────────────────────────
+crossbeam-channel = "0.5"
+parking_lot = "0.12"
+
+# ── Misc ────────────────────────────────────────────────────────────────────
+once_cell = "1.20"
+regex = "1.11"
+
+# ── Build only (not in workspace.dependencies — used only in build.rs) ──────
+
+# ── GStreamer (feature-gated, not on all platforms) ─────────────────────────
+# Listed here so each crate can reference by version without repetition.
+gstreamer       = { version = "0.23", features = ["v1_22"] }
+gstreamer-video = { version = "0.23", features = ["v1_22"] }
+gstreamer-audio = { version = "0.23", features = ["v1_22"] }
+gstreamer-app   = { version = "0.23", features = ["v1_22"] }
+gstreamer-pbutils = { version = "0.23", features = ["v1_22"] }
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+# panic = "abort" is set only on the app crate via its Cargo.toml profile override
+
+[profile.release.package.clio-app]
+panic = "abort"
+
+[profile.test]
+opt-level = 1

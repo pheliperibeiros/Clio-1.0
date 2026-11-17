@@ -1,0 +1,24 @@
+[package]
+name = "clio-custody"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+clio-core = { path = "../clio-core" }
+sha2 = { workspace = true }
+hex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+time = { workspace = true }
+uuid = { workspace = true }
+ed25519-dalek = { workspace = true }
+rand = { workspace = true }
+keyring = { workspace = true }
+anyhow = { workspace = true }

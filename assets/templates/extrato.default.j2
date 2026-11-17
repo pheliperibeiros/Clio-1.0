@@ -1,0 +1,49 @@
+EXTRATO E CERTIDÃO DE REGISTRO AUDIOVISUAL DE OITIVA
+
+1. IDENTIFICAÇÃO
+Certifica-se que, em {{ sessao.inicio | data_longa }}, às {{ sessao.inicio | hora }}, foi realizado o
+registro audiovisual da oitiva de {{ depoente.nome }}{% if depoente.qualificacao %}, na condição de
+{{ depoente.qualificacao }}{% endif %}, nos autos {{ processo.numero }}, perante {{ orgao }}, sob a
+condução de {{ autoridade.titulo }} {{ autoridade.nome }}.
+Responsável pela gravação: {{ responsavel_gravacao }}.
+{% if defesas %}
+Defesa presente:
+{% for d in defesas %}- {{ d.nome }}{% if d.oab %} ({{ d.oab }}){% endif %}{% if d.representa %}, representando {{ d.representa }}{% endif %}.
+{% endfor %}{% endif %}
+
+2. PARÂMETROS TÉCNICOS
+Arquivo: {{ arquivo.nome }}
+Início: {{ sessao.inicio | data }} {{ sessao.inicio | hora }}   Término: {{ sessao.fim | data }} {{ sessao.fim | hora }}
+Duração líquida: {{ sessao.duracao_liquida | duracao }} (pausas: {{ sessao.num_pausas }}, totalizando {{ sessao.tempo_pausado | duracao }})
+Tamanho: {{ arquivo.tamanho | bytes }}
+Vídeo: {{ video.resolucao }}, {{ video.fps }} fps, {{ video.codec }} ({{ video.container }})
+Áudio: {{ audio.modo }}{% for m in audio.microfones %}; {{ m.rotulo }}: {{ m.dispositivo }}{% endfor %}
+{% if sessao.recuperada %}
+ATENÇÃO: esta gravação foi recuperada após interrupção inesperada do sistema e pode estar incompleta.
+{% endif %}
+
+3. INTEGRIDADE (SHA-256)
+{{ arquivo.sha256 | agrupar8 }}
+
+O código acima foi calculado por este equipamento ao encerrar a gravação e permite verificar se o
+arquivo foi alterado depois desse momento: qualquer modificação do arquivo altera o valor. Este extrato
+não substitui assinatura digital qualificada nem carimbo do tempo emitido por terceiro. A avaliação da
+validade e da eficácia probatória cabe à autoridade competente.
+{% if selo.fingerprint %}
+Manifesto assinado localmente com chave Ed25519 (impressão digital: {{ selo.fingerprint }}).
+Este selo detecta adulteração posterior do manifesto, mas não equivale a assinatura ICP-Brasil.
+{% endif %}
+
+4. ASSINATURAS
+
+{{ autoridade.titulo }} {{ autoridade.nome }}
+
+
+{{ depoente.nome }} ({{ depoente.qualificacao }})
+
+{% for d in defesas %}
+{{ d.nome }}{% if d.oab %} — {{ d.oab }}{% endif %}
+
+{% endfor %}
+
+Documento gerado pelo Clio {{ app.versao }} em {{ emissao.data | data_longa }}{% if emissao.local %}, {{ emissao.local }}{% endif %}.

@@ -1,0 +1,58 @@
+[package]
+name = "clio-app"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "clio"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[build-dependencies]
+# Embutir ícone no .exe no Windows
+winresource = "0.1"
+
+[dependencies]
+clio-core    = { path = "../clio-core" }
+clio-config  = { path = "../clio-config" }
+clio-media   = { path = "../clio-media" }
+clio-custody = { path = "../clio-custody" }
+clio-store   = { path = "../clio-store" }
+clio-report  = { path = "../clio-report" }
+
+eframe      = { workspace = true }
+egui        = { workspace = true }
+egui_extras = { workspace = true }
+
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+thiserror   = { workspace = true }
+anyhow      = { workspace = true }
+tracing     = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender   = { workspace = true }
+parking_lot = { workspace = true }
+crossbeam-channel  = { workspace = true }
+time        = { workspace = true }
+uuid        = { workspace = true }
+image       = { workspace = true }
+once_cell   = { workspace = true }
+sha2        = { workspace = true }
+hex         = { workspace = true }
+directories = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+# AppUserModelID para agrupamento correto na barra de tarefas
+windows = { version = "0.58", features = [
+    "Win32_UI_Shell",
+    "Win32_Foundation",
+] }
+
+[features]
+# Habilitar o pipeline GStreamer real (requer GStreamer instalado)
+gst = ["clio-media/gst"]
+default = []

@@ -1,0 +1,29 @@
+RELATÓRIO DA OITIVA / AUDIÊNCIA
+
+1. DADOS GERAIS
+Órgão: {{ orgao }}
+{{ processo.tipo }}: {{ processo.numero }}
+Pessoa ouvida: {{ depoente.nome }} — {{ depoente.qualificacao }}{% if depoente.documento %} — Documento: {{ depoente.documento }}{% endif %}
+Autoridade condutora: {{ autoridade.titulo }} {{ autoridade.nome }}
+Data e horário: {{ sessao.inicio | data_longa }}, das {{ sessao.inicio | hora }} às {{ sessao.fim | hora }} (duração líquida {{ sessao.duracao_liquida | duracao }})
+
+2. PARTICIPANTES
+{% for p in participantes %}- {{ p.papel }}: {{ p.nome }}{% if p.documento %} ({{ p.documento }}){% endif %} — {{ p.presenca }}
+{% endfor %}
+
+3. CRONOLOGIA DO REGISTRO
+{% for e in eventos %}{{ e.hora | hora }}  {{ e.descricao }}
+{% endfor %}
+
+4. OCORRÊNCIAS E OBSERVAÇÕES
+(Espaço para anotações do responsável pela gravação.)
+
+5. REGISTRO TÉCNICO
+Arquivo: {{ arquivo.nome }}
+SHA-256: {{ arquivo.sha256 | agrupar8 }}
+Vídeo: {{ video.resolucao }}, {{ video.fps }} fps, {{ video.codec }} ({{ video.container }})
+Áudio: {{ audio.modo }}{% for m in audio.microfones %}; {{ m.rotulo }}: {{ m.dispositivo }}{% endfor %}
+{% if sessao.recuperada %}ATENÇÃO: gravação recuperada após interrupção inesperada do sistema.{% endif %}
+Gerado pelo Clio {{ app.versao }} (build {{ app.build }}) em {{ emissao.data | data_longa }}.
+
+Responsável pela gravação: {{ responsavel_gravacao }}

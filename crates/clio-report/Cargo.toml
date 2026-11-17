@@ -1,0 +1,24 @@
+[package]
+name = "clio-report"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+clio-core = { path = "../clio-core" }
+clio-custody = { path = "../clio-custody" }
+minijinja = { workspace = true }
+printpdf = { workspace = true }
+zip = { workspace = true }
+quick-xml = { workspace = true }
+image = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+time = { workspace = true }
+anyhow = { workspace = true }
